@@ -35,10 +35,14 @@ if [[ "${github_owner,,}" == "${authenticated_owner,,}" ]]; then
   bootstrap_args+=(--personal)
 fi
 
-flux_installed=false
+flux_bootstrapped=false
 if kubectl --context "${cluster_context}" \
-  -n flux-system get deployment source-controller >/dev/null 2>&1; then
-  flux_installed=true
+    -n flux-system get deployment source-controller >/dev/null 2>&1 &&
+  kubectl --context "${cluster_context}" \
+    -n flux-system get gitrepository flux-system >/dev/null 2>&1 &&
+  kubectl --context "${cluster_context}" \
+    -n flux-system get kustomization flux-system >/dev/null 2>&1; then
+  flux_bootstrapped=true
 fi
 
 main_protected=false
@@ -48,12 +52,12 @@ if gh api \
   main_protected=true
 fi
 
-if [[ "${flux_installed}" == "false" && "${main_protected}" == "true" ]]; then
+if [[ "${flux_bootstrapped}" == "false" && "${main_protected}" == "true" ]]; then
   echo "Retira temporalmente la protección antes del bootstrap inicial." >&2
   exit 1
 fi
 
-if [[ "${flux_installed}" == "false" ]]; then
+if [[ "${flux_bootstrapped}" == "false" ]]; then
   flux bootstrap github "${bootstrap_args[@]}"
 else
   flux check --context "${cluster_context}"

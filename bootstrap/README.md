@@ -41,6 +41,9 @@ task status
 El bootstrap se detiene si el contexto no coincide, el nodo no está preparado,
 el repositorio GitOps no contiene `clusters/local/kustomization.yaml`, el
 repositorio local no tiene commit o falta cualquier herramienta.
+La detección de un bootstrap completo exige controladores, `GitRepository` y
+`Kustomization` raíz. Si una ejecución se interrumpe entre esas fases, la
+siguiente reanuda el bootstrap en lugar de aceptar el estado parcial.
 
 `platform-seed` y `gitops-seed` solo admiten repositorios vacíos. El primero
 publica componentes reutilizables; el segundo publica únicamente composición
