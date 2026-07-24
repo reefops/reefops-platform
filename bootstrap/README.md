@@ -47,6 +47,12 @@ publica componentes reutilizables; el segundo publica únicamente composición
 privada por clúster y selección de aplicaciones. Ninguno sobrescribe o mezcla
 un repositorio existente.
 
+El root `clusters/local/workloads` de GitOps solo puede contener fuentes y
+reconciliaciones hacia artefactos o repositorios fijados. Nunca referenciará
+`infrastructure/` o `platform/` como directorios locales, porque pertenecen a
+`reefops-platform`. La validación del seed reconstruye el layout remoto y lo
+renderiza antes de autorizar bootstrap.
+
 OpenBao es la autoridad runtime. La política `.sops.yaml` solo protege material
 de bootstrap y contiene identidad pública. La clave privada predeterminada
 reside en `~/.config/reefops/age/keys.txt` y debe copiarse de forma segura a un

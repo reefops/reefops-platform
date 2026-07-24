@@ -27,8 +27,12 @@ cp "${project_root}/.sops.yaml" "${seed_dir}/.sops.yaml"
 cp "${project_root}/infra/bootstrap/templates/gitops/README.md" \
   "${seed_dir}/README.md"
 install -d "${seed_dir}/clusters/local/workloads"
-cp "${project_root}/infra/bootstrap/templates/gitops/"*.yaml \
-  "${seed_dir}/clusters/local/workloads/"
+cp "${project_root}/infra/bootstrap/templates/gitops/kustomization.yaml" \
+  "${seed_dir}/clusters/local/workloads/kustomization.yaml"
+cp "${project_root}/infra/bootstrap/templates/gitops/platform-source.yaml" \
+  "${seed_dir}/clusters/local/workloads/platform-source.yaml"
+cp "${project_root}/infra/bootstrap/templates/gitops/platform-reconciliation.yaml" \
+  "${seed_dir}/clusters/local/workloads/platform-reconciliation.yaml"
 
 yq -i '.spec.path = "./clusters/local/workloads"' \
   "${seed_dir}/clusters/local/reconciliation.yaml"
@@ -40,6 +44,8 @@ platform_commit="$(
 )"
 yq -i ".spec.ref.commit = \"${platform_commit}\"" \
   "${seed_dir}/clusters/local/workloads/platform-source.yaml"
+
+kubectl kustomize "${seed_dir}/clusters/local/workloads" >/dev/null
 
 git -C "${seed_dir}" add .
 git -C "${seed_dir}" commit -m "bootstrap ReefOps GitOps desired state"
