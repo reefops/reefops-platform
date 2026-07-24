@@ -1,0 +1,9 @@
+version: "3"
+
+tasks:
+  validate:
+    desc: Render all reusable Kubernetes roots
+    cmds:
+      - kubectl kustomize infrastructure/base >/dev/null
+      - kubectl kustomize platform >/dev/null
+      - shellcheck bootstrap/scripts/*.sh

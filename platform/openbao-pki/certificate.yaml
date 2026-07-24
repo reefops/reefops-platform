@@ -1,0 +1,42 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao-ca
+  namespace: reefops-secrets
+spec:
+  isCA: true
+  commonName: ReefOps OpenBao Local CA
+  secretName: openbao-ca
+  duration: 87600h
+  renewBefore: 8760h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Never
+  issuerRef:
+    name: openbao-selfsigned
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao
+  namespace: reefops-secrets
+spec:
+  secretName: openbao-tls
+  duration: 2160h
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  usages:
+    - server auth
+  dnsNames:
+    - openbao
+    - openbao.reefops-secrets
+    - openbao.reefops-secrets.svc
+    - openbao.reefops-secrets.svc.cluster.local
+  issuerRef:
+    name: openbao-ca
+    kind: Issuer

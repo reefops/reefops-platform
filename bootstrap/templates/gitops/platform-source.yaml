@@ -1,0 +1,12 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: reefops-platform
+  namespace: flux-system
+spec:
+  interval: 10m
+  ref:
+    commit: PLATFORM_COMMIT
+  secretRef:
+    name: platform-git-auth
+  url: ssh://git@github.com/OWNER/reefops-platform.git

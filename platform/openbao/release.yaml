@@ -1,0 +1,112 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openbao
+  namespace: reefops-secrets
+spec:
+  interval: 30m
+  timeout: 10m
+  releaseName: openbao
+  chart:
+    spec:
+      chart: openbao
+      version: 0.28.6
+      sourceRef:
+        kind: HelmRepository
+        name: openbao
+        namespace: flux-system
+      interval: 24h
+  install:
+    disableWait: true
+    remediation:
+      retries: 0
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    global:
+      tlsDisable: false
+    injector:
+      enabled: false
+    csi:
+      enabled: false
+    server:
+      image:
+        repository: openbao/openbao
+        tag: "2.6.1@sha256:5b2486ab0fb90bbc788cc345b0a08616dfb375873ee8be5df3a2fd4d378a67e0"
+        pullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 1
+          memory: 1Gi
+      statefulSet:
+        securityContext:
+          pod:
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          container:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      persistentVolumeClaimRetentionPolicy:
+        whenDeleted: Retain
+        whenScaled: Retain
+      dataStorage:
+        enabled: true
+        size: 10Gi
+        accessMode: ReadWriteOnce
+      auditStorage:
+        enabled: true
+        size: 5Gi
+        accessMode: ReadWriteOnce
+      volumes:
+        - name: tls
+          secret:
+            secretName: openbao-tls
+            defaultMode: 0440
+      volumeMounts:
+        - name: tls
+          mountPath: /openbao/tls
+          readOnly: true
+      extraEnvironmentVars:
+        BAO_ADDR: https://127.0.0.1:8200
+        BAO_CACERT: /openbao/tls/ca.crt
+      standalone:
+        enabled: true
+        config: |
+          ui = false
+
+          listener "tcp" {
+            tls_disable = 0
+            address = "[::]:8200"
+            cluster_address = "[::]:8201"
+            tls_cert_file = "/openbao/tls/tls.crt"
+            tls_key_file = "/openbao/tls/tls.key"
+            tls_min_version = "tls13"
+          }
+
+          storage "raft" {
+            path = "/openbao/data"
+            node_id = "reefops-local-0"
+          }
+
+          disable_mlock = true
+
+          service_registration "kubernetes" {}
+      ha:
+        enabled: false
+      readinessProbe:
+        enabled: true
+      livenessProbe:
+        enabled: false
+    ui:
+      enabled: false
