@@ -55,6 +55,10 @@ reconciliaciones hacia artefactos o repositorios fijados. Nunca referenciará
 `infrastructure/` o `platform/` como directorios locales, porque pertenecen a
 `reefops-platform`. La validación del seed reconstruye el layout remoto y lo
 renderiza antes de autorizar bootstrap.
+El reconciliador raíz solo orquesta y no espera la salud de los
+reconciliadores hijos; así puede aplicar una promoción correctiva aunque una
+capa esté degradada. Cada reconciliador hijo conserva `wait`, dependencias y
+timeout propios.
 
 OpenBao es la autoridad runtime. La política `.sops.yaml` solo protege material
 de bootstrap y contiene identidad pública. La clave privada predeterminada
