@@ -1,0 +1,40 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: plugin-barman-cloud
+  namespace: reefops-database-system
+spec:
+  interval: 30m
+  timeout: 15m
+  releaseName: plugin-barman-cloud
+  chartRef:
+    kind: OCIRepository
+    name: plugin-barman-cloud
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    replicaCount: 1
+    image:
+      tag: v0.13.0@sha256:71589dbac582333442812b07b31f7ea4d00324a8358aac7ca507dabf9f4b6c96
+      pullPolicy: IfNotPresent
+    sidecarImage:
+      tag: v0.13.0@sha256:990361af3319f9e23aafa0f6d7981f99bf1f69b4e6a85cf1bc7d71d6f09bb288
+    crds:
+      create: true
+    podLabels:
+      app.kubernetes.io/part-of: reefops
+      reefops.io/environment: development
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi

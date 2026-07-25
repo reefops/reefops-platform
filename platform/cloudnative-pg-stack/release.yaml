@@ -1,0 +1,55 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cloudnative-pg
+  namespace: reefops-database-system
+spec:
+  interval: 30m
+  timeout: 15m
+  releaseName: cloudnative-pg
+  chartRef:
+    kind: OCIRepository
+    name: cloudnative-pg
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    replicaCount: 1
+    image:
+      repository: ghcr.io/cloudnative-pg/cloudnative-pg
+      tag: 1.30.0@sha256:a2701eb97cdd2a34b1fdb2cb51987f544b706e40bec72ae7146cd8580efefebb
+      pullPolicy: IfNotPresent
+    crds:
+      create: true
+    config:
+      clusterWide: true
+      maxConcurrentReconciles: 2
+      data:
+        WATCH_NAMESPACE: reefops-data
+        INHERITED_LABELS: app.kubernetes.io/part-of,reefops.io/environment
+    rbac:
+      create: true
+      aggregateClusterRoles: false
+    podLabels:
+      app.kubernetes.io/part-of: reefops
+      reefops.io/environment: development
+    resources:
+      requests:
+        cpu: 50m
+        memory: 96Mi
+      limits:
+        cpu: 500m
+        memory: 384Mi
+    monitoring:
+      podMonitorEnabled: true
+      podMonitorAdditionalLabels:
+        app.kubernetes.io/part-of: reefops
+      grafanaDashboard:
+        create: true
+        namespace: reefops-observability

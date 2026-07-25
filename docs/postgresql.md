@@ -25,9 +25,11 @@ norte-sur.
   y manifiesto arm64
   `sha256:765f0fbc962916b228464330c673db5b29e88a51a8d2f2f94a754339aa18100c`.
 
-La implementación verificará firmas Sigstore, procedencia y arquitectura antes
-de aceptar esos artefactos. No consumirá ramas, `latest` ni manifests remotos
-en tiempo de reconciliación.
+La validación verifica las firmas Sigstore de operador y operando contra la
+identidad OIDC de sus repositorios upstream. El plugin Barman no publica
+firmas: su riesgo residual se limita fijando los dos digests de imagen, el
+checksum del manifest de release y un mirror byte a byte del chart oficial.
+No se consumen ramas, `latest` ni manifests remotos en reconciliación.
 
 ## Estado y seguridad
 
@@ -40,6 +42,60 @@ ServiceAccount dedicadas. Las NetworkPolicy permitirán únicamente DNS, API
 Kubernetes, operador↔instancia, plugin↔instancia, backup↔S3 y scrape desde
 observabilidad. Los futuros clientes requerirán allowlist explícita.
 
+La ACL estática de SeaweedFS limita esa identidad al bucket
+`reefops-postgresql-backup` con acciones `Read`, `Write`, `List` y `Tagging`.
+No recibe `Admin` ni acceso a otros buckets. La identidad administrativa de
+SeaweedFS crea el bucket una sola vez mediante una operación auditada; después
+la tarea comprueba escritura, lectura y borrado con la identidad Barman sin
+eliminar ni vaciar el bucket funcional.
+
+El endpoint es interno y HTTP porque el tráfico no abandona el clúster y queda
+restringido por NetworkPolicy. La protección criptográfica frente a pérdida o
+compromiso del clúster se aplica a la exportación externa con `age`; habilitar
+TLS también en S3 interno queda como endurecimiento antes de ejecutar en otro
+host o en producción.
+
+## Orden operativo
+
+El primer despliegue se divide para evitar dependencias circulares:
+
+1. reconciliar operador CloudNativePG, plugin Barman y entrega de secreto;
+2. ejecutar `task openbao-configure` desde `main`;
+3. crear la credencial con
+   `task postgresql-backup-credentials-bootstrap`;
+4. reconciliar `reefops-seaweedfs-secret` y reiniciar únicamente el pod S3 para
+   que relea la ACL estática;
+5. ejecutar `task postgresql-backup-bucket-prepare`;
+6. reconciliar Cluster y configuración;
+7. ejecutar aceptación y recuperación.
+
+Las tareas que usan el token raíz exigen `BAO_TOKEN` leído de forma silenciosa.
+No escriben el token, la clave de acceso ni el secreto en argumentos, logs o
+evidencias. Los bootstrap son create-once con CAS y las evidencias JSONL están
+encadenadas mediante SHA-256.
+
+## Operando
+
+`reefops-postgresql` contiene una sola instancia: esto expresa capacidad real,
+no una falsa alta disponibilidad dentro del mismo Mac. El PVC usa
+`reefops-hostpath-retain` y la metadata heredada ordena conservarlo. El
+superusuario no se publica como Secret.
+
+La base inicial es únicamente `postgres`; las bases, propietarios, migradores
+y roles runtime funcionales se crearán en raíces de cada dominio. Ningún
+dominio podrá conceder permisos, crear claves foráneas, vistas o consultas
+contra otro dominio.
+
+El `ObjectStore` conserva siete días, comprime datos y WAL con gzip y fija los
+ajustes de checksum necesarios para S3 compatible. El backup físico diario se
+programa a las 02:15 mediante cron de seis campos y se solicita uno inmediato
+al crear `ScheduledBackup`.
+
+Prometheus recibe métricas de CloudNativePG y Barman. Las alertas cubren
+indisponibilidad, retraso de réplica —aunque development tenga una instancia,
+la regla ya es portable—, backup con más de 26 horas y último intento fallido.
+Grafana carga el dashboard `ReefOps / PostgreSQL`.
+
 ## Gate de aceptación
 
 La aceptación exigirá revisiones exactas, digests efectivos, ausencia de
@@ -51,3 +107,17 @@ Después forzará un backup Barman, restaurará a un Cluster aislado, comparará
 marcador, extensiones, LSN/timeline y eliminará el destino. La copia externa se
 cifrará con `age` en el directorio privado allowlisted del QNAP. Evidencia y
 cleanup serán encadenados y fail-closed.
+
+Un backup dentro del mismo SeaweedFS no es recuperación ante desastre. La
+aceptación local solo demuestra backup/PITR. El gate de producción permanecerá
+cerrado hasta que una exportación cifrada se rehidrate en almacenamiento S3
+vacío y se restaure un Cluster aislado desde esa copia.
+
+## Límites conocidos
+
+- `10.96.0.1/32` es la dirección del API server del clúster development actual;
+  un overlay futuro debe sustituirla si cambia el service CIDR.
+- SeaweedFS carga su ACL estática al arrancar; tras crear o rotar una identidad
+  es obligatorio un reinicio controlado del pod S3 y su verificación.
+- Development usa un único disco y un único nodo. Retención de PVC y backup
+  evitan borrado casual, pero no sustituyen redundancia física.
