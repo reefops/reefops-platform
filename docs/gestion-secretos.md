@@ -205,9 +205,12 @@ namespace, HelmRelease, StatefulSet, pod o PVC del ensayo.
 
 `openbao-recovery-init` guarda el resultado sensible de la inicialización
 temporal únicamente en `/dev/shm` dentro del pod, con modo `0600`. Las claves
-cruzan `kubectl exec` por entrada estándar solo para abrir ese target y nunca
-se imprimen, se pasan como argumentos ni se escriben en el host. El estado
-local del drill contiene únicamente identificadores, revisión GitOps y tiempos.
+se leen transitoriamente en memoria del proceso local y vuelven por la entrada
+estándar de `kubectl exec` para abrir ese target; nunca se imprimen, se pasan
+como argumentos ni se escriben en el host. Antes de inicializar se comprueba
+que `/dev/shm` sea `tmpfs` y un lock atómico impide ejecuciones concurrentes.
+El estado local del drill contiene únicamente identificadores, revisión GitOps
+y tiempos.
 
 `openbao-recovery-restore` crea su propio port-forward al Service aislado,
 extrae solo la CA pública a un directorio temporal, consume el token raíz

@@ -8,12 +8,24 @@ pod="openbao-recovery-0"
 sni="openbao-recovery.reefops-openbao-recovery.svc"
 state_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/reefops/openbao-recovery-drill"
 state_file="${state_dir}/current.json"
+lock_dir="${state_dir}/operation.lock"
 init_file="/dev/shm/reefops-recovery-init.json"
 operation_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
 correlation_id="${REEFOPS_CORRELATION_ID:-${operation_id}}"
 started_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 install -d -m 0700 "${state_dir}"
+if ! mkdir "${lock_dir}" 2>/dev/null; then
+  echo "Ya existe una operación del drill en curso." >&2
+  exit 1
+fi
+finish() {
+  exit_code=$?
+  trap - EXIT
+  rmdir "${lock_dir}"
+  exit "${exit_code}"
+}
+trap finish EXIT
 if [[ -e "${state_file}" ]]; then
   echo "Ya existe un drill activo en ${state_file}." >&2
   exit 1
@@ -22,6 +34,13 @@ fi
 REEFOPS_CORRELATION_ID="${correlation_id}" \
 REEFOPS_CAUSATION_ID="${operation_id}" \
   "${project_root}/bootstrap/scripts/verify-openbao-recovery-isolation.sh"
+if [[ "$(
+  kubectl --context "${cluster_context}" -n "${namespace}" \
+    exec "${pod}" -c openbao -- stat -f -c %T /dev/shm
+)" != "tmpfs" ]]; then
+  echo "/dev/shm no es tmpfs; se cancela la inicialización." >&2
+  exit 1
+fi
 
 active_cluster_id="$(
   kubectl --context "${cluster_context}" -n reefops-secrets \
