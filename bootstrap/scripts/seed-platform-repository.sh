@@ -33,6 +33,8 @@ cp "${project_root}/LICENSE" "${seed_dir}/LICENSE"
 
 git -C "${seed_dir}" add .
 git -C "${seed_dir}" commit -m "bootstrap ReefOps platform catalog"
+gitleaks git --no-banner --redact --exit-code 1 "${seed_dir}"
+trivy fs --scanners secret --exit-code 1 --skip-dirs .git "${seed_dir}"
 git -C "${seed_dir}" push --set-upstream origin "${git_branch}"
 
 echo "Catálogo de plataforma inicial publicado en ${repository_ref}:${git_branch}."

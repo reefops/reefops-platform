@@ -22,7 +22,7 @@ La NetworkPolicy solo permite clientes desde namespaces autorizados
 explícitamente con `reefops.io/openbao-access=true`; pertenecer a ReefOps no
 concede acceso lateral al gestor.
 
-La deploy key de lectura de `reefops-platform` es una credencial de bootstrap:
+La deploy key de lectura de `reefops-gitops` es una credencial de bootstrap:
 se genera localmente, se registra como read-only y se instala en `flux-system`.
 Puede regenerarse y revocarse sin restaurar datos de OpenBao.
 
@@ -117,7 +117,7 @@ Antes de crear un GitHub Secret se intentará, por este orden:
 1. `GITHUB_TOKEN` con permisos mínimos;
 2. OIDC y credencial efímera;
 3. GitHub App;
-4. deploy key restringida;
+4. deploy key restringida solo para GitOps; plataforma pública sin credencial;
 5. réplica de un secreto de OpenBao.
 
 La sincronización se ejecutará en el host local y siempre iniciará la conexión

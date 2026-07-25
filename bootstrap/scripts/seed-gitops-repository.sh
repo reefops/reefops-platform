@@ -37,7 +37,7 @@ cp "${project_root}/infra/bootstrap/templates/gitops/platform-reconciliation.yam
 yq -i '.spec.path = "./clusters/local/workloads"' \
   "${seed_dir}/clusters/local/reconciliation.yaml"
 yq -i \
-  ".spec.url = \"ssh://git@github.com/${github_owner}/${platform_repository}.git\"" \
+  ".spec.url = \"https://github.com/${github_owner}/${platform_repository}.git\"" \
   "${seed_dir}/clusters/local/workloads/platform-source.yaml"
 platform_commit="$(
   gh api "repos/${github_owner}/${platform_repository}/commits/main" --jq .sha

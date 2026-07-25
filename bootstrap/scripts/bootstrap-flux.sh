@@ -7,7 +7,6 @@ github_repository="${REEFOPS_GITHUB_REPOSITORY:-reefops-gitops}"
 git_branch="${REEFOPS_GIT_BRANCH:-main}"
 age_key_file="${REEFOPS_AGE_KEY_FILE:-${XDG_CONFIG_HOME:-${HOME}/.config}/reefops/age/keys.txt}"
 platform_repository="${REEFOPS_PLATFORM_REPOSITORY:-reefops-platform}"
-platform_key_file="${REEFOPS_PLATFORM_DEPLOY_KEY_FILE:-${XDG_CONFIG_HOME:-${HOME}/.config}/reefops/ssh/platform-gitops}"
 expected_remote_path="clusters/local/kustomization.yaml"
 flux_toolkit_version="v2.9.3"
 
@@ -65,57 +64,6 @@ fi
 
 unset GITHUB_TOKEN
 unset github_token
-
-if [[ ! -f "${platform_key_file}" ]]; then
-  install -d -m 0700 "$(dirname "${platform_key_file}")"
-  ssh-keygen \
-    -q \
-    -t ed25519 \
-    -N "" \
-    -C "reefops-${cluster_context}-platform-read" \
-    -f "${platform_key_file}"
-  chmod 0600 "${platform_key_file}"
-  chmod 0644 "${platform_key_file}.pub"
-fi
-
-platform_key_title="reefops-${cluster_context}-platform-read"
-platform_public_key="$(<"${platform_key_file}.pub")"
-platform_public_key_material="$(awk '{print $1 " " $2}' "${platform_key_file}.pub")"
-platform_key_json="$(
-  gh api "repos/${github_owner}/${platform_repository}/keys" |
-    jq -c \
-      --arg title "${platform_key_title}" \
-      '[.[] | select(.title == $title)]'
-)"
-platform_key_count="$(jq 'length' <<<"${platform_key_json}")"
-if [[ "${platform_key_count}" == "0" ]]; then
-  gh api \
-    --method POST \
-    "repos/${github_owner}/${platform_repository}/keys" \
-    -f title="${platform_key_title}" \
-    -f key="${platform_public_key}" \
-    -F read_only=true \
-    --silent
-elif [[ "${platform_key_count}" == "1" ]]; then
-  registered_key="$(jq -r '.[0].key' <<<"${platform_key_json}")"
-  registered_key_material="$(awk '{print $1 " " $2}' <<<"${registered_key}")"
-  registered_read_only="$(jq -r '.[0].read_only' <<<"${platform_key_json}")"
-  if [[ "${registered_key_material}" != "${platform_public_key_material}" ||
-    "${registered_read_only}" != "true" ]]; then
-    echo "La deploy key existente no coincide o no es de solo lectura." >&2
-    exit 1
-  fi
-else
-  echo "Hay más de una deploy key con el título esperado." >&2
-  exit 1
-fi
-
-flux create secret git platform-git-auth \
-  --url="ssh://git@github.com/${github_owner}/${platform_repository}.git" \
-  --private-key-file="${platform_key_file}" \
-  --namespace=flux-system \
-  --export |
-  kubectl --context "${cluster_context}" apply -f -
 
 if [[ ! -f "${age_key_file}" ]]; then
   install -d -m 0700 "$(dirname "${age_key_file}")"
