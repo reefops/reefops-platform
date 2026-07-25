@@ -43,9 +43,10 @@ trap finish EXIT
 
 bao status >/dev/null
 
-if ! bao audit list -format=json | jq -e 'has("file/")' >/dev/null; then
-  bao audit enable file file_path=/openbao/audit/audit.log
-fi
+bao audit list -format=json | jq -e 'has("file/")' >/dev/null || {
+  echo "Falta el audit device declarativo file/; corrige GitOps y realiza unseal." >&2
+  exit 1
+}
 
 if ! bao secrets list -format=json | jq -e 'has("ci/")' >/dev/null; then
   bao secrets enable -path=ci kv-v2

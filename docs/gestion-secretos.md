@@ -44,6 +44,12 @@ plataforma independiente, mantendrá una CA local y un certificado interno para
 adaptadores y operadores autorizados. La clave de la CA vive como Secret
 Kubernetes gestionado por cert-manager; su backup y rotación forman parte de la
 recuperación de plataforma y nunca se copia a GitHub.
+
+El audit device `file/` se declara en el HCL del servidor y escribe en el PVC
+dedicado. OpenBao 2.6 impide crearlo mediante API para que una credencial
+administrativa no pueda redirigir auditoría a destinos arbitrarios. Los scripts
+solo verifican su presencia; no se habilita
+`unsafe_allow_api_audit_creation`.
 Las variables que el chart deriva de TLS no se redefinen en valores locales;
 el render validado rechaza nombres de entorno duplicados antes de promocionar
 OpenBao.
