@@ -150,4 +150,15 @@ if grep -RIE \
   exit 1
 fi
 
+verification_script="${project_root}/bootstrap/scripts/verify-external-secrets-openbao.sh"
+policy_field_count="$(
+  grep -Fc "jq -er '.policy'" "${verification_script}"
+)"
+if [[ "${policy_field_count}" -ne 2 ]] ||
+  grep -F "jq -er '.rules'" "${verification_script}" >/dev/null ||
+  ! grep -F 'failure_phase:' "${verification_script}" >/dev/null; then
+  echo "La verificación no respeta el contrato JSON ni identifica la fase fallida." >&2
+  exit 1
+fi
+
 echo "Integración declarativa ESO/OpenBao validada."
