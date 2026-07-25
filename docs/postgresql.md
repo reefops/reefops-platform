@@ -134,16 +134,19 @@ vacío y se restaure un Cluster aislado desde esa copia.
 operando. Crea un `ObjectStore` de lectura sobre el servidor Barman
 `reefops-postgresql` y un Cluster distinto,
 `reefops-postgresql-recovery-drill`. Su `bootstrap.recovery` usa el plugin
-CNPG-I y recibe mediante sustitución Flux el nombre de un restore point
-sintético creado expresamente para la operación.
+CNPG-I y recibe mediante sustitución Flux dos referencias públicas e
+inmutables: el identificador del backup físico completo que sirve de base y el
+nombre de un restore point sintético creado expresamente para la operación. El
+CRD exige `backupID` cuando se acota la recuperación; el punto nombrado detiene
+la reproducción de WAL y no sustituye la selección del backup base.
 
 La promoción exige este orden:
 
 1. insertar un marcador sintético en el origen, crear un restore point con
    nombre único y forzar el cambio de WAL;
 2. esperar a que Barman archive ese WAL;
-3. versionar en GitOps únicamente el nombre público del restore point y
-   reconciliar la raíz temporal;
+3. versionar en GitOps únicamente el identificador público del backup base y
+   el nombre público del restore point, y reconciliar la raíz temporal;
 4. comprobar que el Cluster restaurado está listo, contiene exactamente el
    marcador esperado y alcanzó el restore point;
 5. registrar revisiones GitOps/plataforma, backup, WAL, LSN, timeline,

@@ -23,6 +23,7 @@ calculated_hash="$(
 }
 marker="$(jq -er '.marker' "${state_file}")"
 restore_point="$(jq -er '.restore_point' "${state_file}")"
+backup_id="$(jq -er '.backup_id' "${state_file}")"
 target="$(
   kubectl -n "${namespace}" get cluster "${target_cluster}" -o json |
     jq -er '
@@ -87,6 +88,7 @@ record="$(
   jq -cn \
     --arg operation_id "$(jq -r '.operation_id' "${state_file}")" \
     --arg marker "${marker}" \
+    --arg backup_id "${backup_id}" \
     --arg restore_point "${restore_point}" \
     --arg source_timeline "${source_timeline}" \
     --arg target_timeline "${target_timeline}" \
@@ -111,6 +113,7 @@ record="$(
       operation_id: $operation_id,
       operation: "postgresql-isolated-pitr",
       marker: $marker,
+      backup_id: $backup_id,
       restore_point: $restore_point,
       source_timeline: ($source_timeline | tonumber),
       target_timeline: ($target_timeline | tonumber),
