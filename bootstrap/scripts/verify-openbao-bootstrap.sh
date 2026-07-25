@@ -49,7 +49,7 @@ bao status -format=json |
 
 service_account_token="$(
   kubectl --context "${cluster_context}" \
-    -n reefops-system create token openbao-smoke-test --duration=5m
+    -n reefops-system create token openbao-smoke-test --duration=10m
 )"
 login_response="$(
   printf '%s' "${service_account_token}" |

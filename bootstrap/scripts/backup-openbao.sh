@@ -57,7 +57,7 @@ if [[ -z "${BAO_TOKEN:-}" ]]; then
   cluster_context="${REEFOPS_CLUSTER_CONTEXT:-docker-desktop}"
   service_account_token="$(
     kubectl --context "${cluster_context}" \
-      -n reefops-system create token openbao-backup --duration=5m
+      -n reefops-system create token openbao-backup --duration=10m
   )"
   login_response="$(
     printf '%s' "${service_account_token}" |
