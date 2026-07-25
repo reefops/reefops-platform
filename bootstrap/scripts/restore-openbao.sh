@@ -33,6 +33,7 @@ target_cluster_id=""
 approval_id=""
 approval_sha256=""
 producer_version=""
+backup_created_at=""
 target_endpoint="${BAO_ADDR:?Define BAO_ADDR}"
 target_sni="${BAO_TLS_SERVER_NAME:?Define BAO_TLS_SERVER_NAME}"
 git_revision="$(git rev-parse HEAD)"
@@ -131,6 +132,7 @@ finish() {
     --arg snapshot_index "${snapshot_index}" \
     --arg snapshot_term "${snapshot_term}" \
     --arg snapshot_size "${snapshot_size}" \
+    --arg backup_created_at "${backup_created_at}" \
     --arg correlation_id "${correlation_id}" \
     --arg causation_id "${causation_id}" \
     '{
@@ -160,6 +162,7 @@ finish() {
         term: $snapshot_term,
         size: $snapshot_size
       },
+      backup_created_at: $backup_created_at,
       started_at: $started_at,
       finished_at: $finished_at,
       result: $result,
@@ -212,6 +215,7 @@ age --decrypt \
   "${manifest_file}"
 chmod 0600 "${manifest_plain}"
 producer_version="$(jq -er '.openbao_version' "${manifest_plain}")"
+backup_created_at="$(jq -er '.created_at' "${manifest_plain}")"
 if ! jq -e \
   --arg digest "${expected_digest}" \
   --arg producer_version "${producer_version}" \
