@@ -192,7 +192,23 @@ if [[ "$(kubectl config current-context)" != "${cluster_context}" ]] ||
   exit 2
 fi
 
+data_config_revision="$(
+  kubectl -n flux-system get kustomization \
+    reefops-data-secret-delivery-config -o json |
+    jq -er '
+      select(.status.conditions[] |
+        .type == "Ready" and .status == "True") |
+      .status.lastAppliedRevision |
+      sub("^(main@)?sha1:"; "")
+    '
+)"
+if [[ "${data_config_revision}" != "${gitops_revision}" ]]; then
+  echo "La configuración privada de entrega no aplica la revisión GitOps exacta." >&2
+  exit 2
+fi
+
 for reconciliation in \
+  reefops-external-secrets-data \
   reefops-seaweedfs-secret \
   reefops-seaweedfs-stack \
   reefops-seaweedfs-config; do
