@@ -150,6 +150,9 @@ spec:
       namespaceOverride: reefops-node-observability
       hostNetwork: false
       hostPID: false
+      hostRootFsMount:
+        enabled: true
+        mountPropagation: None
       image:
         registry: quay.io
         repository: prometheus/node-exporter
@@ -183,6 +186,8 @@ spec:
         enabled: false
         patch:
           enabled: false
+      tls:
+        enabled: false
       image:
         registry: quay.io
         repository: prometheus-operator/prometheus-operator

@@ -103,6 +103,9 @@ if ! yq eval -e '
     contains(["secrets"]) | not) and
   .spec.values."prometheus-node-exporter".hostNetwork == false and
   .spec.values."prometheus-node-exporter".hostPID == false and
+  .spec.values."prometheus-node-exporter".hostRootFsMount.mountPropagation ==
+    "None" and
+  .spec.values.prometheusOperator.tls.enabled == false and
   .spec.values."prometheus-node-exporter".containerSecurityContext.allowPrivilegeEscalation ==
     false and
   (.spec.values."prometheus-node-exporter".containerSecurityContext.capabilities.drop |

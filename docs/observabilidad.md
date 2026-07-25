@@ -58,8 +58,14 @@ enforcement `privileged`, marcado con el propósito explícito
 `reefops.io/privileged-purpose=node-metrics`. Una política de red solo permite
 entrada desde `reefops-observability` al puerto 9100. El DaemonSet desactiva
 `hostNetwork` y `hostPID`, y conserva únicamente los mounts de host requeridos,
+sin propagación de mounts —Docker Desktop no expone `/` como mount compartido—,
 con seccomp, root filesystem de solo lectura, sin escalado de privilegios y sin
 capabilities.
+
+El webhook de admisión del Prometheus Operator no forma parte de esta fase. Se
+desactivan tanto el webhook como el TLS interno asociado para que el Deployment
+no dependa de un certificado que no se genera; el servicio sigue siendo
+interno y aislado por red.
 
 ## Capacidad inicial
 
