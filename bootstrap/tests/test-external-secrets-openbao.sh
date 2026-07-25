@@ -140,7 +140,7 @@ if ! yq eval -e '
   .spec.ingress[0].from[2].namespaceSelector.matchLabels[
     "reefops.io/environment"] == "development" and
   .spec.ingress[0].from[2].podSelector.matchLabels[
-    "app.kubernetes.io/instance"] == "external-secrets-seaweedfs" and
+    "app.kubernetes.io/instance"] == "external-secrets-data" and
   (.spec.ingress[0].from | length) == 3
   ' "${temp_dir}/openbao.yaml" >/dev/null; then
   echo "OpenBao no limita ESO por capacidad y entorno del namespace." >&2

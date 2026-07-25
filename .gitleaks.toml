@@ -1,0 +1,12 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Nombre de mecanismo de autenticación en evidencia, no credencial"
+condition = "AND"
+paths = [
+  '''bootstrap/scripts/prepare-postgresql-backup-bucket\.sh''',
+]
+regexes = [
+  '''^kubernetes-secret-and-s3-signature-v4$''',
+]

@@ -20,6 +20,13 @@ declara, porque una clave duplicada invalida el post-render estricto de Flux.
 preparado. Añade servicios y monitores para Flux, cert-manager y ESO, así como
 las reglas propias y las políticas de red.
 
+La relación con los componentes observados es unidireccional. Las raíces de
+OpenBao, Envoy Gateway, SeaweedFS, CloudNativePG, Barman y PostgreSQL no
+dependen de `observability-stack` ni `observability-config`. Sus monitores,
+reglas y dashboards sí dependen de ambas partes. Una avería de Prometheus o
+Grafana degrada diagnóstico y alertado, pero no bloquea la reconciliación ni el
+servicio del componente observado.
+
 Ambos directorios son raíces Kustomize deliberadamente independientes y no
 forman parte del agregado `platform`. GitOps reconcilia primero el stack
 —incluidas sus CRD y el operador— y solo después la configuración que consume
