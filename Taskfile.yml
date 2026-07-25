@@ -7,3 +7,4 @@ tasks:
       - kubectl kustomize infrastructure/base >/dev/null
       - kubectl kustomize platform >/dev/null
       - shellcheck bootstrap/scripts/*.sh
+      - gitleaks git --no-banner --redact --exit-code 1 .

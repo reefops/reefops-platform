@@ -8,7 +8,7 @@ Git. El bootstrap no instala aplicaciones de negocio directamente.
 
 - Kubernetes accesible mediante un contexto explícito.
 - Git, kubectl, Flux CLI, SOPS, age, OpenBao CLI, Helm y Task.
-- Organización y tres repositorios Git remotos privados ya creados.
+- Organización y tres repositorios Git remotos ya creados; GitOps privado.
 - Credenciales Git disponibles para Flux sin escribirlas en el repositorio.
 
 ## Variables
