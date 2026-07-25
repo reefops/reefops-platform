@@ -99,7 +99,7 @@ spec:
 
           storage "raft" {
             path = "/openbao/data"
-            node_id = "reefops-recovery-target-0"
+            node_id = "reefops-local-0"
           }
 
           audit "file" "file" {

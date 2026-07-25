@@ -12,6 +12,7 @@ lock_dir="${state_dir}/operation.lock"
 init_file="/dev/shm/reefops-recovery-init.json"
 operation_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
 correlation_id="${REEFOPS_CORRELATION_ID:-${operation_id}}"
+causation_id="${REEFOPS_CAUSATION_ID:-${operation_id}}"
 started_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 install -d -m 0700 "${state_dir}"
@@ -51,7 +52,7 @@ fi
 
 if [[ "${resume}" == "false" ]]; then
   REEFOPS_CORRELATION_ID="${correlation_id}" \
-  REEFOPS_CAUSATION_ID="${operation_id}" \
+  REEFOPS_CAUSATION_ID="${causation_id}" \
     "${project_root}/bootstrap/scripts/verify-openbao-recovery-isolation.sh"
 
 active_cluster_id="$(
@@ -73,6 +74,7 @@ jq -n \
   --arg schema_version "1" \
   --arg drill_id "${operation_id}" \
   --arg correlation_id "${correlation_id}" \
+  --arg causation_id "${causation_id}" \
   --arg started_at "${started_at}" \
   --arg cluster_context "${cluster_context}" \
   --arg kubernetes_cluster_uid "${kubernetes_cluster_uid}" \
@@ -82,6 +84,7 @@ jq -n \
     schema_version: $schema_version,
     drill_id: $drill_id,
     correlation_id: $correlation_id,
+    causation_id: $causation_id,
     started_at: $started_at,
     cluster_context: $cluster_context,
     kubernetes_cluster_uid: $kubernetes_cluster_uid,

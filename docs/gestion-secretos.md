@@ -163,12 +163,18 @@ evidencias con retención e integridad cuando ese componente esté desplegado.
 
 ### Ensayo aislado de recuperación
 
-El ensayo periódico no reutiliza el namespace, Service, certificados, PVC ni
-identidad del OpenBao activo. Se despliega mediante una raíz IaC opt-in en
+El ensayo periódico no reutiliza el namespace, Service, certificados ni PVC
+del OpenBao activo. Se despliega mediante una raíz IaC opt-in en
 `reefops-openbao-recovery`, con nombre DNS y CA propios, sin Ingress y con
 NetworkPolicy de denegación por defecto. La composición privada habilita esa
 raíz temporalmente mediante una Kustomization independiente; no se incorpora
 al root normal de plataforma.
+
+Raft sí exige reutilizar el `node_id` contenido en el snapshot para que el nodo
+restaurado pueda reconocerse como miembro y elegir líder. En el caso actual es
+`reefops-local-0`. Compartir ese identificador lógico no conecta los clústeres:
+el aislamiento efectivo lo aportan namespace, endpoint, PKI, red y volúmenes
+distintos. El preflight y el restore verifican el valor esperado antes de actuar.
 
 La secuencia es:
 

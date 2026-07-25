@@ -57,6 +57,17 @@ kubectl --context "${cluster_context}" -n "${namespace}" \
 kubectl --context "${cluster_context}" -n "${namespace}" \
   get serviceaccount "${release}" \
   -o jsonpath='{.automountServiceAccountToken}' | grep -Fxq 'false'
+runtime_node_id="$(
+  # Expansion belongs to awk inside the container.
+  # shellcheck disable=SC2016
+  kubectl --context "${cluster_context}" -n "${namespace}" \
+    exec "${release}-0" -c openbao -- \
+    awk '/node_id/ {gsub(/[\" ]/, "", $3); print $3}' /tmp/storageconfig.hcl
+)"
+if [[ "${runtime_node_id}" != "reefops-local-0" ]]; then
+  echo "El node ID no coincide con la membresía Raft esperada." >&2
+  exit 1
+fi
 
 if kubectl --context "${cluster_context}" get clusterrolebinding \
   -o json |
