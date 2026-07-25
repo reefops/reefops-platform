@@ -53,6 +53,9 @@ if ! yq eval -e '
     "reefops-monitoring" and
   .spec.values."prometheus-node-exporter".hostNetwork == false and
   .spec.values."prometheus-node-exporter".hostPID == false and
+  .spec.values."prometheus-node-exporter".hostRootFsMount.mountPropagation ==
+    "None" and
+  .spec.values.prometheusOperator.tls.enabled == false and
   .spec.values."prometheus-node-exporter".namespaceOverride ==
     "reefops-node-observability"
   ' <<<"${release}" >/dev/null; then
@@ -134,6 +137,27 @@ runtime_images+=$'\n'"$(
   ' "${temp_dir}/rendered.yaml" |
     sed '/^---$/d'
 )"
+
+if yq eval -e '
+  select(.kind == "DaemonSet" and
+    .metadata.name == "reefops-monitoring-prometheus-node-exporter") |
+  .spec.template.spec.containers[].volumeMounts[]? |
+  select(.name == "root" and .mountPropagation == "HostToContainer")
+  ' "${temp_dir}/rendered.yaml" >/dev/null 2>&1; then
+  echo "node-exporter conserva propagación incompatible con Docker Desktop." >&2
+  exit 1
+fi
+
+if yq eval -e '
+  select(.kind == "Deployment" and
+    .metadata.name == "reefops-monitoring-operator") |
+  (.spec.template.spec.volumes[]?.secret.secretName ==
+    "reefops-monitoring-admission") or
+  (.spec.template.spec.containers[].args[]? == "--web.enable-tls=true")
+  ' "${temp_dir}/rendered.yaml" >/dev/null 2>&1; then
+  echo "El operador depende todavía del TLS del webhook desactivado." >&2
+  exit 1
+fi
 
 while IFS= read -r image; do
   [[ -z "${image}" ]] && continue
