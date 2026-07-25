@@ -40,6 +40,12 @@ Usará almacenamiento persistente y audit device separado. En el Mac Mini
 inicial se ejecutará como instancia standalone; esto no se presentará como alta
 disponibilidad.
 
+El chart oficial se consume desde GHCR como artefacto OCI fijado por digest,
+igual que los charts de cert-manager y ESO. La imagen de OpenBao también se
+fija por digest. `task validate` obtiene el chart declarado, compara su digest
+y renderiza las configuraciones activa y de recuperación antes de permitir una
+promoción.
+
 El almacenamiento será Raft integrado incluso con un único nodo. Raft aporta
 snapshots verificables y un camino de evolución a varios nodos, pero un único
 Mac Mini sigue siendo un único dominio de fallo. No se simulará alta
@@ -137,6 +143,18 @@ La prueba de aceptación:
 8. registra operación, actor, revisión, `environment_id`, correlación,
    causación y resultado, pero nunca el valor.
 
+El orden operativo limpio es:
+
+1. validar y publicar el commit de plataforma;
+2. ejecutar `openbao-configure` contra el OpenBao activo;
+3. promover ese SHA completo mediante PR en `reefops-gitops`;
+4. esperar todas las reconciliaciones Flux;
+5. ejecutar `openbao-verify-eso`.
+
+La prueba usa el token raíz original solo durante la ceremonia interactiva; no
+genera nuevas claves ni lo conserva. Su evidencia queda en
+`~/.local/state/reefops/eso-openbao/operations.jsonl`.
+
 La verificación crea su propio port-forward al Service activo, fija SNI y CA,
 exige el contexto `docker-desktop`, comprueba la etiqueta
 `environment=development` y compara el `cluster_id` observado por el endpoint
@@ -150,6 +168,19 @@ operación en error. La evidencia enlaza revisión Flux aplicada, UID y
 generación de `SecretStore`/`ExternalSecret`, `cluster_id` y aumento de entradas
 de login/lectura en el audit device. La revocación escribe una nueva versión
 sintética y verifica que no llega al Secret destino antes de restaurar.
+
+Las regresiones observadas durante la primera aceptación quedan cubiertas:
+
+- ambos wrappers usan exactamente el JSONPath de
+  `reefops.io/environment`, sin doble escape;
+- `task validate` ejecuta `bash -n` sobre todos los scripts y tests;
+- la captura y la restauración consumen el campo `policy` emitido por
+  `bao policy read -format=json`;
+- todo fallo informa de la fase y enlaza la evidencia no sensible.
+
+Un fallo anterior a la captura no muta estado. Después de capturarlo, el trap
+restaura política y valor; si no puede demostrar la restauración, devuelve un
+error distinto y la integración no se considera aceptada.
 
 La indisponibilidad o sellado de OpenBao impide nuevos refrescos. ESO podrá
 conservar temporalmente el último Secret materializado según la política

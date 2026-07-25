@@ -1,8 +1,13 @@
 apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
+kind: OCIRepository
 metadata:
   name: openbao
   namespace: flux-system
 spec:
   interval: 24h
-  url: https://openbao.github.io/openbao-helm
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    digest: sha256:b3a8d99a56ffa36174b3848917ca849311f890d3bc2214245c88c270a54d0795
+  url: oci://ghcr.io/openbao/charts/openbao
