@@ -1,6 +1,11 @@
 version: "3"
 
 tasks:
+  prerequisites:
+    desc: Comprueba herramientas, contexto y prerrequisitos del clúster
+    cmds:
+      - ./bootstrap/scripts/check-prerequisites.sh
+
   validate:
     desc: Render all reusable Kubernetes roots
     cmds:
@@ -8,3 +13,43 @@ tasks:
       - kubectl kustomize platform >/dev/null
       - shellcheck bootstrap/scripts/*.sh
       - gitleaks git --no-banner --redact --exit-code 1 .
+
+  openbao-configure:
+    desc: Configura auditoría, políticas y auth Kubernetes tras init y unseal
+    cmds:
+      - ./bootstrap/scripts/configure-openbao.sh
+
+  openbao-verify-bootstrap:
+    desc: Verifica OpenBao con una identidad Kubernetes de mínimo privilegio
+    cmds:
+      - ./bootstrap/scripts/verify-openbao-bootstrap.sh
+
+  openbao-backup:
+    desc: Crea un snapshot Raft cifrado fuera del clúster
+    cmds:
+      - ./bootstrap/scripts/backup-openbao.sh
+
+  openbao-ca-backup:
+    desc: Cifra y respalda la CA local fuera del clúster
+    cmds:
+      - ./bootstrap/scripts/backup-openbao-ca.sh
+
+  openbao-restore:
+    desc: Restaura un snapshot Raft con confirmación explícita
+    cmds:
+      - ./bootstrap/scripts/restore-openbao.sh
+
+  openbao-ca-restore:
+    desc: Restaura la CA local con confirmación explícita
+    cmds:
+      - ./bootstrap/scripts/restore-openbao-ca.sh
+
+  openbao-verify-recovery:
+    desc: Verifica la autoridad restaurada sin revelar secretos
+    cmds:
+      - ./bootstrap/scripts/verify-openbao-recovery.sh
+
+  openbao-tls-reload:
+    desc: Recarga el certificado TLS renovado y verifica su serial
+    cmds:
+      - ./bootstrap/scripts/reload-openbao-tls.sh
