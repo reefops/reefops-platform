@@ -54,7 +54,7 @@ if [[ "$(jq -r '.phase' "${state_file}")" == "verified-success" &&
   echo "Existen artefactos no enlazados para este drill." >&2
   exit 1
 fi
-if [[ "$(jq -r '.phase' "${state_file}")" ==
+if [[ "$(jq -r '.phase' "${state_file}")" == \
   "evidence-seal-started-result-uncertain" ]]; then
   if [[ -f "${audit_file}" && -f "${manifest_file}" ]]; then
     audit_sha256="$(shasum -a 256 "${audit_file}" | awk '{print $1}')"
