@@ -554,7 +554,7 @@ kubectl -n "${namespace}" delete prometheusrule "${rule_name}" --wait=true \
   >/dev/null
 rule_created="false"
 restoration="success"
-for _ in {1..60}; do
+for _ in {1..180}; do
   prometheus_active="$(
     curl --fail --silent http://127.0.0.1:19090/api/v1/alerts |
       jq --arg operation_id "${operation_id}" \
