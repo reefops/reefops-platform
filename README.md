@@ -13,8 +13,11 @@ Charts and container images used by the active platform are resolved through
 immutable OCI digests; a semantic version is retained only as human-readable
 provenance and test input.
 
-OpenBao is the active platform stage. Its Helm release deliberately accepts an
+The secrets stage is operational: cert-manager, OpenBao and scoped ESO are
+reconciled and accepted. OpenBao's Helm release deliberately accepts an
 unready sealed pod during first installation; consumers remain blocked until
 initialization, unseal, policy configuration, Kubernetes-auth verification and
-an encrypted external snapshot have succeeded. The local ceremony is described
-in `docs/gestion-secretos.md` and is executed through the `openbao-*` tasks.
+an encrypted external snapshot have succeeded. ESO is promoted only after that
+ceremony and must pass refresh, revocation, audit and restoration checks. The
+procedure is described in `docs/gestion-secretos.md` and is executed through
+the `openbao-*` tasks.
