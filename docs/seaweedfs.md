@@ -110,6 +110,12 @@ funcional de accesos a medios.
 - servicios internos y ausencia de recursos de exposición;
 - PVC enlazados y credencial procedente de ESO/OpenBao.
 
+La revisión GitOps se obtiene de la API Kubernetes del `GitRepository` de Flux.
+No se usa la salida de presentación de `flux get`: su formato y opciones no son
+un contrato estable para automatización. Esta comprobación cubre la regresión
+detectada durante la primera aceptación, cuando `flux get source git -o json`
+falló antes de comenzar las pruebas S3.
+
 Después crea un bucket y objetos sintéticos, valida el subconjunto S3, reinicia
 los cuatro roles y confirma persistencia. El trap elimina bucket, port-forward
 y temporales incluso al fallar. Cada fase registra revisión, recursos, actor,

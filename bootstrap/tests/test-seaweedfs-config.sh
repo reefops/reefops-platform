@@ -150,6 +150,7 @@ for contract in \
   'pvc_uids_before' \
   'validate_evidence_chain' \
   'kubectl auth can-i' \
+  'get gitrepository flux-system -o json' \
   'get ocirepository seaweedfs' \
   'seaweedfs_cleanup_bucket' \
   'seaweedfs_mark_bucket_owned' \
@@ -159,6 +160,11 @@ for contract in \
     exit 1
   fi
 done
+
+if grep -F 'flux get source git' "${verifier}" >/dev/null; then
+  echo "La aceptación depende de una salida no estable del CLI de Flux." >&2
+  exit 1
+fi
 
 recovery_verifier="${project_root}/bootstrap/scripts/verify-seaweedfs-recovery.sh"
 for contract in \
