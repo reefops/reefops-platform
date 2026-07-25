@@ -13,6 +13,7 @@ tasks:
       - kubectl kustomize environments/development >/dev/null
       - kubectl kustomize platform >/dev/null
       - kubectl kustomize recovery/openbao >/dev/null
+      - bash -n bootstrap/scripts/*.sh bootstrap/tests/*.sh
       - shellcheck bootstrap/scripts/*.sh
       - shellcheck bootstrap/tests/*.sh
       - ./bootstrap/tests/test-environment-foundation.sh

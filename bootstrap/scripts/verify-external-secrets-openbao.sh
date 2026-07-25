@@ -121,7 +121,7 @@ restore_state() {
   restored_policy="${temp_dir}/restored-policy.hcl"
   bao policy read -format=json "${policy_name}" |
     jq -er '.rules' >"${restored_policy}"
-  if [[ "$(normalize_policy "${restored_policy}")" !=
+  if [[ "$(normalize_policy "${restored_policy}")" != \
     "$(normalize_policy "${previous_policy}")" ]]; then
     return 1
   fi
@@ -312,7 +312,7 @@ external_secret_generation="$(
 
 bao policy read -format=json "${policy_name}" |
   jq -er '.rules' >"${previous_policy}"
-if [[ "$(normalize_policy "${previous_policy}")" !=
+if [[ "$(normalize_policy "${previous_policy}")" != \
   "$(normalize_policy "${policy_file}")" ]]; then
   error_code="openbao-policy-drift"
   exit 1
