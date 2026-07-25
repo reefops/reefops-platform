@@ -176,6 +176,12 @@ restaurado pueda reconocerse como miembro y elegir líder. En el caso actual es
 el aislamiento efectivo lo aportan namespace, endpoint, PKI, red y volúmenes
 distintos. El preflight y el restore verifican el valor esperado antes de actuar.
 
+La configuración declarativa de componentes persistidos también debe ser
+semánticamente idéntica a la del snapshot. En particular, nombre, path, tipo,
+descripción y opciones del audit device deben coincidir; OpenBao rechaza
+modificarlos durante el post-unseal. El entorno aislado conserva por ello la
+descripción funcional original aunque escriba en un PVC de audit diferente.
+
 La secuencia es:
 
 1. reconciliar el entorno aislado y comprobar que nace sin inicializar;
