@@ -187,7 +187,7 @@ runtime_node_id="$(
     exec "${target_service}-0" -c openbao -- \
     awk '/node_id/ {gsub(/[\" ]/, "", $3); print $3}' /tmp/storageconfig.hcl
 )"
-if [[ "${runtime_node_id}" != "reefops-recovery-target-0" ]]; then
+if [[ "${runtime_node_id}" != "reefops-local-0" ]]; then
   echo "El node ID no corresponde al target aislado." >&2
   exit 1
 fi
