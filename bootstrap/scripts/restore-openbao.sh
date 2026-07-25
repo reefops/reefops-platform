@@ -84,7 +84,7 @@ if [[ "${actual_digest}" != "${expected_digest}" ]]; then
 fi
 
 bao status >/dev/null
-"${project_root}/infra/bootstrap/scripts/backup-openbao.sh"
+"${project_root}/bootstrap/scripts/backup-openbao.sh"
 
 age --decrypt \
   --identity "${age_identity}" \

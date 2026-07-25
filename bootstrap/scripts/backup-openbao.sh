@@ -13,6 +13,7 @@ backup_digest=""
 result="failure"
 temp_dir="$(mktemp -d)"
 snapshot_file="${temp_dir}/openbao.snap"
+token_origin="provided"
 
 install -d -m 0700 "${backup_dir}" "${audit_dir}"
 touch "${audit_dir}/operations.jsonl"
@@ -23,6 +24,9 @@ finish() {
   trap - EXIT
   rm -f "${snapshot_file}"
   rmdir "${temp_dir}"
+  if [[ "${token_origin}" == "kubernetes" ]]; then
+    unset BAO_TOKEN
+  fi
   jq -cn \
     --arg operation_id "${operation_id}" \
     --arg actor "$(id -un)" \
@@ -48,6 +52,24 @@ finish() {
   exit "${exit_code}"
 }
 trap finish EXIT
+
+if [[ -z "${BAO_TOKEN:-}" ]]; then
+  cluster_context="${REEFOPS_CLUSTER_CONTEXT:-docker-desktop}"
+  service_account_token="$(
+    kubectl --context "${cluster_context}" \
+      -n reefops-system create token openbao-backup --duration=5m
+  )"
+  login_response="$(
+    printf '%s' "${service_account_token}" |
+      bao write -format=json auth/kubernetes/login \
+        role=reefops-backup jwt=-
+  )"
+  unset service_account_token
+  BAO_TOKEN="$(jq -er '.auth.client_token' <<<"${login_response}")"
+  export BAO_TOKEN
+  unset login_response
+  token_origin="kubernetes"
+fi
 
 bao status >/dev/null
 bao operator raft snapshot save "${snapshot_file}"

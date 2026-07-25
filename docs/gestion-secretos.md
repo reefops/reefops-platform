@@ -80,6 +80,18 @@ Señales de salud:
 - login Kubernetes de prueba con permisos mínimos;
 - lectura de una ruta sintética sin exponer su valor.
 
+La configuración versionada crea dos identidades de Kubernetes sin tokens
+montados permanentemente:
+
+- `openbao-smoke-test`, limitada a los metadatos de `ci/healthcheck`;
+- `openbao-backup`, limitada a obtener snapshots Raft.
+
+Los logins solicitan tokens Kubernetes de corta duración y los canjean por
+tokens OpenBao igualmente efímeros. El token inicial solo se utiliza para la
+configuración de bootstrap y se devuelve inmediatamente a custodia offline.
+Que Helm y Flux estén reconciliados no permite desbloquear consumidores si
+falla cualquiera de estas pruebas.
+
 La instalación Helm no espera readiness en el primer arranque porque una
 instancia sellada no puede estar preparada antes de la inicialización manual.
 Esta excepción solo cubre la instalación: ninguna aplicación consumidora se

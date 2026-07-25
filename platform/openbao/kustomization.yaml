@@ -4,3 +4,4 @@ resources:
   - repository.yaml
   - release.yaml
   - network-policy.yaml
+  - serviceaccounts.yaml
