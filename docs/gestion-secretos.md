@@ -164,6 +164,12 @@ Kustomizations ESO en GitOps. En un bootstrap nuevo, omitir la ceremonia deja
 el `SecretStore` en `NotReady` y no desbloquea consumidores; `dependsOn` no se
 interpreta como prueba de que OpenBao esté inicializado o configurado.
 
+`openbao-configure` no acepta un endpoint arbitrario: el wrapper fija contexto,
+namespace, port-forward, CA y SNI del Service activo, compara su `cluster_id`
+con el observado dentro del pod y entrega ese identificador al registro de la
+operación. El token raíz se recibe únicamente por entorno y se retira al
+terminar.
+
 ## 4. Salud y recuperación de OpenBao
 
 Señales de salud:

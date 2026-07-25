@@ -24,7 +24,7 @@ tasks:
   openbao-configure:
     desc: Configura auditoría, políticas y auth Kubernetes tras init y unseal
     cmds:
-      - ./bootstrap/scripts/configure-openbao.sh
+      - ./bootstrap/scripts/run-configure-openbao.sh
 
   openbao-verify-bootstrap:
     desc: Verifica OpenBao con una identidad Kubernetes de mínimo privilegio
