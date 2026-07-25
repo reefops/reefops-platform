@@ -208,6 +208,12 @@ finish() {
       causation_id: $causation_id
     }' >>"${audit_dir}/operations.jsonl"
 
+  if [[ "${result}" != "success" ]]; then
+    echo \
+      "Verificación ESO/OpenBao fallida en la fase ${phase} (${error_code})." \
+      "Evidencia: ${audit_dir}/operations.jsonl" >&2
+  fi
+
   rm -rf "${temp_dir}"
   exit "${exit_code}"
 }
