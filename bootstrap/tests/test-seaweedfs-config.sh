@@ -167,6 +167,14 @@ if grep -F 'flux get source git' "${verifier}" >/dev/null; then
 fi
 
 recovery_verifier="${project_root}/bootstrap/scripts/verify-seaweedfs-recovery.sh"
+for revision_verifier in "${verifier}" "${recovery_verifier}"; do
+  if ! grep -F 'sub("^(main@)?sha1:"; "")' \
+    "${revision_verifier}" >/dev/null; then
+    echo "Un verificador no normaliza las revisiones Git fijadas por commit." >&2
+    exit 1
+  fi
+done
+
 for contract in \
   '/Volumes/reefops-backup/seaweedfs' \
   'age --recipient' \
