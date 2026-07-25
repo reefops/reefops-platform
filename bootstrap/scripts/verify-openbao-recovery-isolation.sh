@@ -68,9 +68,15 @@ fi
 
 status_json="$(
   kubectl --context "${cluster_context}" -n "${namespace}" \
-    exec "${release}-0" -c openbao -- bao status -format=json 2>/dev/null ||
+    exec "${release}-0" -c openbao -- \
+    env BAO_TLS_SERVER_NAME=openbao-recovery.reefops-openbao-recovery.svc \
+    bao status -format=json 2>/dev/null ||
     true
 )"
+if [[ -z "${status_json}" ]]; then
+  echo "No se pudo obtener el estado TLS del target de recuperación." >&2
+  exit 1
+fi
 if [[ "$(jq -r '.initialized // false' <<<"${status_json}")" != "false" ]]; then
   echo "El target de recuperación ya está inicializado." >&2
   exit 1
