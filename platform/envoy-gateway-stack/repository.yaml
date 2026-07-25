@@ -1,0 +1,10 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: envoy-gateway
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: oci://docker.io/envoyproxy/gateway-helm
+  ref:
+    digest: sha256:cfb34ff4266c87a394cd6be5c13607a2dd47083aef771368302eaeaa99c4a0a9

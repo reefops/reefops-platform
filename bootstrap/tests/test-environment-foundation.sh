@@ -17,8 +17,8 @@ config_count="$(
     "${temp_dir}/development.yaml" |
     awk '/^reefops-/ {count++} END {print count+0}'
 )"
-if [[ "${config_count}" -ne 9 ]]; then
-  echo "Development no tiene identidad local en sus nueve namespaces." >&2
+if [[ "${config_count}" -ne 10 ]]; then
+  echo "Development no tiene identidad local en sus diez namespaces." >&2
   exit 1
 fi
 

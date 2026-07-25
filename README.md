@@ -24,5 +24,9 @@ the `openbao-*` tasks.
 
 The internal development observability stack is operational and has passed its
 alerting, persistence, restart and encrypted-evidence acceptance. Its phased
-scope, isolation and capacity are described in `docs/observabilidad.md`. The
-next stateful platform gate is SeaweedFS.
+scope, isolation and capacity are described in `docs/observabilidad.md`.
+
+The next gate is the inert Envoy Gateway foundation described in
+`docs/envoy-gateway.md`: Gateway API CRDs and a digest-pinned controller, with
+no Gateway, route, listener, data plane or external Service. The next stateful
+platform gate remains SeaweedFS.

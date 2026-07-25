@@ -14,12 +14,16 @@ tasks:
       - kubectl kustomize platform >/dev/null
       - kubectl kustomize platform/observability-stack >/dev/null
       - kubectl kustomize platform/observability-config >/dev/null
+      - kubectl kustomize platform/envoy-gateway-stack >/dev/null
+      - kubectl kustomize platform/envoy-gateway-config >/dev/null
       - kubectl kustomize recovery/openbao >/dev/null
       - kubectl kustomize infrastructure/base | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize environments/development | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/observability-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/observability-config | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/envoy-gateway-stack | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/envoy-gateway-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize recovery/openbao | kubeconform -strict -ignore-missing-schemas -summary
       - bash -n bootstrap/scripts/*.sh bootstrap/tests/*.sh
       - shellcheck bootstrap/scripts/*.sh
@@ -30,6 +34,9 @@ tasks:
       - ./bootstrap/tests/test-observability-artifacts.sh
       - ./bootstrap/tests/test-observability-config.sh
       - ./bootstrap/tests/test-observability-evidence-backup.sh
+      - ./bootstrap/tests/test-envoy-gateway-artifacts.sh
+      - ./bootstrap/tests/test-envoy-gateway-config.sh
+      - ./bootstrap/tests/test-envoy-gateway-evidence-backup.sh
       - ./bootstrap/tests/test-openbao-recovery-close.sh
       - ./bootstrap/tests/test-openbao-recovery-target-allowlist.sh
       - gitleaks git --no-banner --redact --exit-code 1 .
@@ -63,6 +70,21 @@ tasks:
     desc: Descifra y verifica la integridad del backup de evidencia
     cmds:
       - ./bootstrap/scripts/verify-observability-evidence-backup.sh
+
+  envoy-gateway-verify:
+    desc: Verifica la fundación inerte de Envoy Gateway
+    cmds:
+      - ./bootstrap/scripts/verify-envoy-gateway.sh
+
+  envoy-gateway-evidence-backup:
+    desc: Cifra la evidencia de Envoy Gateway fuera del clúster
+    cmds:
+      - ./bootstrap/scripts/backup-envoy-gateway-evidence.sh
+
+  envoy-gateway-evidence-backup-verify:
+    desc: Descifra y verifica el backup de evidencia de Envoy Gateway
+    cmds:
+      - ./bootstrap/scripts/verify-envoy-gateway-evidence-backup.sh
 
   openbao-backup:
     desc: Crea un snapshot Raft cifrado fuera del clúster
