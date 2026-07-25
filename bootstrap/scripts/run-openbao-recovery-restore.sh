@@ -119,6 +119,11 @@ BAO_TOKEN="$(
 )"
 export BAO_TOKEN
 
+jq '.phase = "restore-started-result-uncertain"' \
+  "${state_file}" >"${state_file}.new"
+chmod 0600 "${state_file}.new"
+mv "${state_file}.new" "${state_file}"
+
 BAO_ADDR=https://127.0.0.1:18200 \
 BAO_CACERT="${ca_file}" \
 BAO_TLS_SERVER_NAME="${sni}" \
