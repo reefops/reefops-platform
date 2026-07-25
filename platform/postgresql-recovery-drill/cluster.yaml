@@ -24,6 +24,7 @@ spec:
     recovery:
       source: origin
       recoveryTarget:
+        backupID: ${REEFOPS_POSTGRESQL_RECOVERY_BACKUP_ID}
         targetName: ${REEFOPS_POSTGRESQL_RECOVERY_TARGET}
   externalClusters:
     - name: origin

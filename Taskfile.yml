@@ -117,6 +117,11 @@ tasks:
     cmds:
       - ./bootstrap/scripts/verify-postgresql-recovery-drill.sh
 
+  postgresql-recovery-close:
+    desc: Verifica el prune efímero y cierra la cadena de evidencia PITR
+    cmds:
+      - ./bootstrap/scripts/close-postgresql-recovery-drill.sh
+
   observability-verify:
     desc: Verifica alertas, persistencia y evidencia de observabilidad
     cmds:

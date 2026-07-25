@@ -19,6 +19,8 @@ if ! yq eval -e '
   .spec.storage.storageClass == "reefops-hostpath-delete" and
   .spec.storage.size == "5Gi" and
   .spec.bootstrap.recovery.source == "origin" and
+  .spec.bootstrap.recovery.recoveryTarget.backupID ==
+    "${REEFOPS_POSTGRESQL_RECOVERY_BACKUP_ID}" and
   .spec.bootstrap.recovery.recoveryTarget.targetName ==
     "${REEFOPS_POSTGRESQL_RECOVERY_TARGET}" and
   (.spec.plugins == null or (.spec.plugins | length) == 0) and
