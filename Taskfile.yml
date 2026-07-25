@@ -16,6 +16,7 @@ tasks:
       - shellcheck bootstrap/scripts/*.sh
       - shellcheck bootstrap/tests/*.sh
       - ./bootstrap/tests/test-environment-foundation.sh
+      - ./bootstrap/tests/test-external-secrets-openbao.sh
       - ./bootstrap/tests/test-openbao-recovery-close.sh
       - ./bootstrap/tests/test-openbao-recovery-target-allowlist.sh
       - gitleaks git --no-banner --redact --exit-code 1 .
@@ -29,6 +30,11 @@ tasks:
     desc: Verifica OpenBao con una identidad Kubernetes de mínimo privilegio
     cmds:
       - ./bootstrap/scripts/verify-openbao-bootstrap.sh
+
+  openbao-verify-eso:
+    desc: Verifica autenticación, refresco y fallo cerrado de ESO con OpenBao
+    cmds:
+      - ./bootstrap/scripts/verify-external-secrets-openbao.sh
 
   openbao-backup:
     desc: Crea un snapshot Raft cifrado fuera del clúster

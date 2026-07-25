@@ -9,7 +9,7 @@ Se distinguen cuatro clases:
 
 | Clase | Autoridad | Entrega |
 |---|---|---|
-| Runtime de workloads | OpenBao local | Identidad Kubernetes y volumen en memoria |
+| Runtime de workloads | OpenBao local | Identidad Kubernetes; volumen en memoria o Secret Kubernetes cuando el consumidor lo exija |
 | Bootstrap de OpenBao/Flux | Custodia offline | SOPS + `age` solo cuando deba declararse cifrado |
 | CI de GitHub | OpenBao local | Réplica revocable en GitHub Secrets |
 | Datos, medios y backups | Almacén local correspondiente | Nunca GitHub Secrets |
@@ -18,9 +18,16 @@ Los servicios de dominio no importarán un SDK de OpenBao ni conocerán dónde s
 custodia un secreto. La plataforma lo montará como archivo o lo entregará al
 adaptador técnico correspondiente.
 
+External Secrets Operator —ESO— será el adaptador declarativo para operadores
+que exijan un Secret Kubernetes. ESO no se convierte en autoridad ni justifica
+sincronizar rutas completas: cada `ExternalSecret` declarará claves concretas,
+propietario y política de ciclo de vida.
+
 La NetworkPolicy solo permite clientes desde namespaces autorizados
 explícitamente con `reefops.io/openbao-access=true`; pertenecer a ReefOps no
-concede acceso lateral al gestor.
+concede acceso lateral al gestor. ESO es la excepción más estrecha: combina
+namespace y entorno exactos con el label del pod controlador, sin conceder la
+capacidad a todo `reefops-secret-delivery`.
 
 La deploy key de lectura de `reefops-gitops` es una credencial de bootstrap:
 se genera localmente, se registra como read-only y se instala en `flux-system`.
@@ -89,6 +96,75 @@ Dependencias y orden:
 6. auth de Kubernetes y políticas de mínimo privilegio;
 7. integración de entrega a workloads;
 8. aplicaciones que consumen secretos.
+
+## 3. Integración ESO
+
+La primera integración se instala en `reefops-secret-delivery`, un namespace
+sin claves privadas de OpenBao ni de otros consumidores, y contiene:
+
+- chart OCI e imagen fijados por digest;
+- controlador scoped bajo Pod Security `restricted`;
+- webhook y cert-controller desactivados para evitar RBAC global innecesario;
+- `SecretStore` namespaced con backend KV v2 `ci/`;
+- CA pública fijada por la composición privada en el ConfigMap
+  `openbao-ca-bundle`, sin copiar `tls.key` ni omitir verificación;
+- ServiceAccount `external-secrets-openbao`, dedicada a autenticación
+  Kubernetes y sin token montado permanentemente;
+- rol `reefops-external-secrets` y política OpenBao limitados a
+  `ci/eso-smoke-test`;
+- `ExternalSecret` y Secret destino exclusivamente sintéticos.
+
+El controlador de ESO conserva su ServiceAccount operativo para hablar con la
+API Kubernetes. No se reutiliza como identidad OpenBao: solicita mediante
+TokenRequest un token breve para `external-secrets-openbao` y lo canjea por un
+token OpenBao con TTL limitado.
+
+No se crea inicialmente un `ClusterSecretStore`. Cada namespace consumidor
+recibirá una instancia ESO scoped o un mecanismo equivalente, CA pública,
+ServiceAccount y política propios. Una identidad de un operador de datos no
+podrá leer secretos de dominios, inteligencia o identidad.
+
+La prueba de aceptación:
+
+1. verifica que OpenBao está inicializado, no sellado y auditando;
+2. autentica ESO mediante Kubernetes, sin credencial estática;
+3. espera `SecretStore` y `ExternalSecret` preparados;
+4. compara la clave sintética sin imprimirla;
+5. rota el valor sintético y comprueba el refresco;
+6. revoca temporalmente el acceso y comprueba fallo cerrado sin sustituir el
+   valor por un default;
+7. restaura la política y el valor sintético original;
+8. registra operación, actor, revisión, `environment_id`, correlación,
+   causación y resultado, pero nunca el valor.
+
+La verificación crea su propio port-forward al Service activo, fija SNI y CA,
+exige el contexto `docker-desktop`, comprueba la etiqueta
+`environment=development` y compara el `cluster_id` observado por el endpoint
+con el del pod activo. No acepta una dirección OpenBao aportada por el
+operador, por lo que no puede reutilizar accidentalmente el endpoint de
+recovery.
+
+Un lock local serializa el ensayo. Antes de mutar captura política y valor
+sintético; el trap intenta restaurarlos y un fallo de restauración convierte la
+operación en error. La evidencia enlaza revisión Flux aplicada, UID y
+generación de `SecretStore`/`ExternalSecret`, `cluster_id` y aumento de entradas
+de login/lectura en el audit device. La revocación escribe una nueva versión
+sintética y verifica que no llega al Secret destino antes de restaurar.
+
+La indisponibilidad o sellado de OpenBao impide nuevos refrescos. ESO podrá
+conservar temporalmente el último Secret materializado según la política
+declarada, por lo que cada consumidor deberá definir si puede continuar, debe
+degradarse o ha de detenerse. Esta caché Kubernetes no sustituye backup,
+rotación ni autoridad.
+
+La promoción se realiza en dos fases. Primero se publica el catálogo de
+plataforma y se ejecuta `openbao-configure` contra la autoridad activa para
+crear rol, política y valor sintético. Solo después se promocionan las
+Kustomizations ESO en GitOps. En un bootstrap nuevo, omitir la ceremonia deja
+el `SecretStore` en `NotReady` y no desbloquea consumidores; `dependsOn` no se
+interpreta como prueba de que OpenBao esté inicializado o configurado.
+
+## 4. Salud y recuperación de OpenBao
 
 Señales de salud:
 
@@ -292,7 +368,7 @@ seccomp `RuntimeDefault`, privilege escalation deshabilitada, capabilities
 mínimas y requests/limits explícitos. Un cambio de esos controles deberá
 renderizarse y probarse antes de promoverse.
 
-## 3. GitHub Secrets
+## 5. GitHub Secrets
 
 Antes de crear un GitHub Secret se intentará, por este orden:
 
@@ -329,7 +405,7 @@ contra la versión activa fijada en la allowlist.
 GitHub Secrets no alojará secretos runtime, credenciales de dispositivos,
 claves privadas SOPS, material de unseal, contexto del acuario ni backups.
 
-## 4. Trazabilidad
+## 6. Trazabilidad
 
 La evidencia no sensible de una sincronización tendrá:
 
@@ -345,7 +421,7 @@ La evidencia no sensible de una sincronización tendrá:
 La auditoría funcional y el audit device de OpenBao son fuentes distintas. Los
 logs técnicos ayudan al diagnóstico, pero no reemplazan ninguna de ellas.
 
-## 5. Rotación y replay
+## 7. Rotación y replay
 
 Una rotación crea una versión nueva, actualiza consumidores y después revoca la
 anterior. Reintentar la sincronización de la misma versión es idempotente.

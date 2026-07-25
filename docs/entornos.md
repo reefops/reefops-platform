@@ -12,6 +12,15 @@ reciben `reefops.io/environment=development`. No se renombran porque el
 OpenBao operativo conserva PVC, PKI, identidad Raft y evidencias ligadas a
 `reefops-secrets`.
 
+`reefops-secret-delivery` aísla el controlador ESO y los Secrets que
+materialice. Solo recibe la CA pública de OpenBao; las claves privadas
+permanecen en `reefops-secrets`.
+
+La composición privada local fija esa CA pública y el ClusterIP de la API
+Kubernetes permitido por la NetworkPolicy. Su validación compara ambos contra
+el clúster antes de promoverlos. Recrear la CA o cambiar el rango de Services
+exige actualizar la composición mediante PR; una discrepancia falla cerrada.
+
 La plataforma conserva componentes reutilizables y contratos con
 `environment_id` para permitir más entornos. Crear uno nuevo requerirá una
 composición GitOps explícita, un destino y controles verificados; no se
