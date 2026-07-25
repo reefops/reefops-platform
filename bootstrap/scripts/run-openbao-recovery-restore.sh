@@ -17,18 +17,57 @@ manifest_digest="${REEFOPS_OPENBAO_RESTORE_MANIFEST_SHA256:?Define REEFOPS_OPENB
 age_identity="${REEFOPS_OPENBAO_RESTORE_IDENTITY:?Define REEFOPS_OPENBAO_RESTORE_IDENTITY}"
 backup_dir="${REEFOPS_OPENBAO_BACKUP_DIR:?Define REEFOPS_OPENBAO_BACKUP_DIR}"
 backup_recipient="${REEFOPS_OPENBAO_BACKUP_RECIPIENT:?Define REEFOPS_OPENBAO_BACKUP_RECIPIENT}"
+original_material_confirmed="${REEFOPS_ORIGINAL_SEAL_MATERIAL_CONFIRMED:-}"
+restore_confirmation="${REEFOPS_CONFIRM_OPENBAO_RESTORE:-}"
+lock_dir="${state_dir}/operation.lock"
 
 if [[ ! -f "${state_file}" ]]; then
   echo "No existe un drill inicializado." >&2
   exit 1
 fi
+if ! mkdir "${lock_dir}" 2>/dev/null; then
+  echo "Ya existe una operación del drill en curso." >&2
+  exit 1
+fi
+if ! jq -e \
+  --arg cluster_context "${cluster_context}" \
+  --arg backup_digest "${backup_digest}" \
+  '
+    .schema_version == "1" and
+    .phase == "restore-approved" and
+    .cluster_context == $cluster_context and
+    .approved_backup_sha256 == $backup_digest
+  ' "${state_file}" >/dev/null; then
+  rmdir "${lock_dir}"
+  echo "El estado del drill no autoriza este restore." >&2
+  exit 1
+fi
 correlation_id="$(jq -er '.correlation_id' "${state_file}")"
 drill_id="$(jq -er '.drill_id' "${state_file}")"
-target_cluster_id="$(jq -er '.target_cluster_id' "${state_file}")"
 kubernetes_cluster_uid="$(jq -er '.kubernetes_cluster_uid' "${state_file}")"
-approval_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
-approval_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/reefops/openbao-restore/approvals"
-approval_file="${approval_dir}/${approval_id}.json"
+approval_file="$(jq -er '.approval_file' "${state_file}")"
+expected_gitops_revision="$(jq -er '.gitops_revision' "${state_file}")"
+current_gitops_revision="$(
+  kubectl --context "${cluster_context}" -n flux-system \
+    get kustomization reefops-openbao-recovery \
+    -o jsonpath='{.status.lastAppliedRevision}'
+)"
+current_kubernetes_cluster_uid="$(
+  kubectl --context "${cluster_context}" get namespace kube-system \
+    -o jsonpath='{.metadata.uid}'
+)"
+if [[ "${current_gitops_revision}" != "${expected_gitops_revision}" ||
+  "${current_kubernetes_cluster_uid}" != "${kubernetes_cluster_uid}" ]]; then
+  rmdir "${lock_dir}"
+  echo "La revisión GitOps o el clúster cambiaron desde la aprobación." >&2
+  exit 1
+fi
+if [[ "${original_material_confirmed}" != "true" ||
+  "${restore_confirmation}" != "force-restore-${backup_digest}" ]]; then
+  rmdir "${lock_dir}"
+  echo "Faltan las confirmaciones explícitas del restore." >&2
+  exit 1
+fi
 temp_dir="$(mktemp -d)"
 ca_file="${temp_dir}/ca.crt"
 port_forward_log="${temp_dir}/port-forward.log"
@@ -43,12 +82,12 @@ finish() {
   fi
   rm -f "${ca_file}" "${port_forward_log}"
   rmdir "${temp_dir}"
+  rmdir "${lock_dir}"
   unset BAO_TOKEN
   exit "${exit_code}"
 }
 trap finish EXIT
 
-install -d -m 0700 "${approval_dir}"
 kubectl --context "${cluster_context}" -n "${namespace}" \
   get secret openbao-recovery-tls -o jsonpath='{.data.ca\.crt}' |
   base64 --decode >"${ca_file}"
@@ -79,39 +118,11 @@ BAO_TOKEN="$(
     awk -F'"' '/"root_token"/ {print $4}' "${init_file}"
 )"
 export BAO_TOKEN
-expires_at="$(date -u -v+30M '+%Y-%m-%dT%H:%M:%SZ')"
-jq -n \
-  --arg schema_version "1" \
-  --arg approval_id "${approval_id}" \
-  --arg encrypted_sha256 "${backup_digest}" \
-  --arg restore_mode "disaster-recovery" \
-  --arg target_cluster_id "${target_cluster_id}" \
-  --arg target_scope "isolated-recovery" \
-  --arg cluster_context "${cluster_context}" \
-  --arg kubernetes_cluster_uid "${kubernetes_cluster_uid}" \
-  --arg target_namespace "${namespace}" \
-  --arg target_service "${service}" \
-  --arg target_endpoint "https://127.0.0.1:18200" \
-  --arg target_sni "${sni}" \
-  --arg actor "$(id -un)" \
-  --arg expires_at "${expires_at}" \
-  '{
-    schema_version: $schema_version,
-    approval_id: $approval_id,
-    encrypted_sha256: $encrypted_sha256,
-    restore_mode: $restore_mode,
-    target_cluster_id: $target_cluster_id,
-    target_scope: $target_scope,
-    cluster_context: $cluster_context,
-    kubernetes_cluster_uid: $kubernetes_cluster_uid,
-    target_namespace: $target_namespace,
-    target_service: $target_service,
-    target_endpoint: $target_endpoint,
-    target_sni: $target_sni,
-    actor: $actor,
-    expires_at: $expires_at
-  }' >"${approval_file}"
-chmod 0600 "${approval_file}"
+
+jq '.phase = "restore-started-result-uncertain"' \
+  "${state_file}" >"${state_file}.new"
+chmod 0600 "${state_file}.new"
+mv "${state_file}.new" "${state_file}"
 
 BAO_ADDR=https://127.0.0.1:18200 \
 BAO_CACERT="${ca_file}" \
@@ -131,8 +142,8 @@ REEFOPS_OPENBAO_RESTORE_TARGET_SERVICE="${service}" \
 REEFOPS_OPENBAO_RESTORE_APPROVAL_FILE="${approval_file}" \
 REEFOPS_OPENBAO_BACKUP_DIR="${backup_dir}" \
 REEFOPS_OPENBAO_BACKUP_RECIPIENT="${backup_recipient}" \
-REEFOPS_ORIGINAL_SEAL_MATERIAL_CONFIRMED=true \
-REEFOPS_CONFIRM_OPENBAO_RESTORE="force-restore-${backup_digest}" \
+REEFOPS_ORIGINAL_SEAL_MATERIAL_CONFIRMED="${original_material_confirmed}" \
+REEFOPS_CONFIRM_OPENBAO_RESTORE="${restore_confirmation}" \
   "${project_root}/bootstrap/scripts/restore-openbao.sh"
 
 kubectl --context "${cluster_context}" -n "${namespace}" \

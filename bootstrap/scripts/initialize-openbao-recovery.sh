@@ -26,14 +26,21 @@ finish() {
   exit "${exit_code}"
 }
 trap finish EXIT
+resume="false"
 if [[ -e "${state_file}" ]]; then
-  echo "Ya existe un drill activo en ${state_file}." >&2
-  exit 1
+  current_phase="$(jq -er '.phase' "${state_file}")"
+  if [[ "${current_phase}" == "initialization-started-result-uncertain" ]] &&
+    kubectl --context "${cluster_context}" -n "${namespace}" \
+      exec "${pod}" -c openbao -- test -f "${init_file}"; then
+    operation_id="$(jq -er '.drill_id' "${state_file}")"
+    correlation_id="$(jq -er '.correlation_id' "${state_file}")"
+    resume="true"
+  else
+    echo "Ya existe un drill activo no reanudable en ${state_file}." >&2
+    exit 1
+  fi
 fi
 
-REEFOPS_CORRELATION_ID="${correlation_id}" \
-REEFOPS_CAUSATION_ID="${operation_id}" \
-  "${project_root}/bootstrap/scripts/verify-openbao-recovery-isolation.sh"
 if [[ "$(
   kubectl --context "${cluster_context}" -n "${namespace}" \
     exec "${pod}" -c openbao -- stat -f -c %T /dev/shm
@@ -41,6 +48,11 @@ if [[ "$(
   echo "/dev/shm no es tmpfs; se cancela la inicialización." >&2
   exit 1
 fi
+
+if [[ "${resume}" == "false" ]]; then
+  REEFOPS_CORRELATION_ID="${correlation_id}" \
+  REEFOPS_CAUSATION_ID="${operation_id}" \
+    "${project_root}/bootstrap/scripts/verify-openbao-recovery-isolation.sh"
 
 active_cluster_id="$(
   kubectl --context "${cluster_context}" -n reefops-secrets \
@@ -82,6 +94,7 @@ chmod 0600 "${state_file}"
 kubectl --context "${cluster_context}" -n "${namespace}" \
   exec "${pod}" -c openbao -- /bin/sh -c \
   'umask 077; env BAO_TLS_SERVER_NAME=openbao-recovery.reefops-openbao-recovery.svc bao operator init -format=json > /dev/shm/reefops-recovery-init.json'
+fi
 
 init_json="$(
   kubectl --context "${cluster_context}" -n "${namespace}" \
@@ -92,7 +105,8 @@ for index in 0 1 2; do
   printf '%s\n' "${unseal_key}" |
     kubectl --context "${cluster_context}" -n "${namespace}" \
       exec -i "${pod}" -c openbao -- \
-      env BAO_TLS_SERVER_NAME="${sni}" bao operator unseal >/dev/null
+      env BAO_TLS_SERVER_NAME="${sni}" \
+      bao write -format=json sys/unseal key=- >/dev/null
   unset unseal_key
 done
 unset init_json
