@@ -98,6 +98,15 @@ spec:
             node_id = "reefops-local-0"
           }
 
+          audit "file" "file" {
+            description = "ReefOps OpenBao functional audit"
+            options {
+              file_path = "/openbao/audit/audit.log"
+              mode = "0600"
+              log_raw = "false"
+            }
+          }
+
       ha:
         enabled: false
       readinessProbe:
