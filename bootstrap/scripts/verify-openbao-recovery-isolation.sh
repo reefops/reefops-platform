@@ -68,10 +68,31 @@ if [[ "${runtime_node_id}" != "reefops-local-0" ]]; then
   echo "El node ID no coincide con la membresía Raft esperada." >&2
   exit 1
 fi
-if ! kubectl --context "${cluster_context}" -n "${namespace}" \
-  exec "${release}-0" -c openbao -- \
-  grep -Fq 'description = "ReefOps OpenBao functional audit"' \
-  /tmp/storageconfig.hcl; then
+extract_audit_contract() {
+  target_namespace="$1"
+  target_pod="$2"
+  # Expansion belongs to awk inside the container.
+  # shellcheck disable=SC2016
+  kubectl --context "${cluster_context}" -n "${target_namespace}" \
+    exec "${target_pod}" -c openbao -- \
+    awk '
+      /audit "file" "file"/ {capture=1}
+      capture {
+        line=$0
+        gsub(/[[:space:]]/, "", line)
+        printf "%s", line
+        opens=gsub(/\{/, "{", $0)
+        closes=gsub(/\}/, "}", $0)
+        depth += opens - closes
+        if (depth == 0) exit
+      }
+    ' /tmp/storageconfig.hcl
+}
+active_audit_contract="$(extract_audit_contract "${active_namespace}" "${active_pod}")"
+recovery_audit_contract="$(extract_audit_contract "${namespace}" "${release}-0")"
+expected_audit_contract='audit"file""file"{description="ReefOpsOpenBaofunctionalaudit"options{file_path="/openbao/audit/audit.log"mode="0600"log_raw="false"}}'
+if [[ "${active_audit_contract}" != "${expected_audit_contract}" ||
+  "${recovery_audit_contract}" != "${expected_audit_contract}" ]]; then
   echo "El contrato declarativo del audit device no coincide con el origen." >&2
   exit 1
 fi

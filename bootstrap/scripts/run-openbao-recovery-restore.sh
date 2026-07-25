@@ -46,6 +46,8 @@ correlation_id="$(jq -er '.correlation_id' "${state_file}")"
 drill_id="$(jq -er '.drill_id' "${state_file}")"
 kubernetes_cluster_uid="$(jq -er '.kubernetes_cluster_uid' "${state_file}")"
 approval_file="$(jq -er '.approval_file' "${state_file}")"
+approval_id="$(jq -er '.approval_id' "${state_file}")"
+target_cluster_id="$(jq -er '.target_cluster_id' "${state_file}")"
 expected_gitops_revision="$(jq -er '.gitops_revision' "${state_file}")"
 current_gitops_revision="$(
   kubectl --context "${cluster_context}" -n flux-system \
@@ -146,9 +148,35 @@ REEFOPS_ORIGINAL_SEAL_MATERIAL_CONFIRMED="${original_material_confirmed}" \
 REEFOPS_CONFIRM_OPENBAO_RESTORE="${restore_confirmation}" \
   "${project_root}/bootstrap/scripts/restore-openbao.sh"
 
+restore_record="$(
+  jq -ce \
+    --arg correlation_id "${correlation_id}" \
+    --arg causation_id "${drill_id}" \
+    --arg approval_id "${approval_id}" \
+    --arg target_cluster_id "${target_cluster_id}" \
+    --arg backup_digest "${backup_digest}" \
+    'select(
+      .correlation_id == $correlation_id and
+      .causation_id == $causation_id and
+      .approval_id == $approval_id and
+      .target_cluster_id == $target_cluster_id and
+      .expected_sha256 == $backup_digest and
+      .target_scope == "isolated-recovery" and
+      .result == "restore-applied-awaiting-verification"
+    )' \
+    "${XDG_STATE_HOME:-${HOME}/.local/state}/reefops/openbao-restore/operations.jsonl" |
+    tail -n 1
+)"
+restore_operation_id="$(jq -er '.operation_id' <<<"${restore_record}")"
+backup_created_at="$(jq -er '.backup_created_at' <<<"${restore_record}")"
 kubectl --context "${cluster_context}" -n "${namespace}" \
   exec "${pod}" -c openbao -- rm -f "${init_file}"
-jq '.phase = "snapshot-applied-awaiting-original-unseal"' \
+jq \
+  --arg restore_operation_id "${restore_operation_id}" \
+  --arg backup_created_at "${backup_created_at}" \
+  '.phase = "snapshot-applied-awaiting-original-unseal" |
+   .restore_operation_id = $restore_operation_id |
+   .backup_created_at = $backup_created_at' \
   "${state_file}" >"${state_file}.new"
 chmod 0600 "${state_file}.new"
 mv "${state_file}.new" "${state_file}"

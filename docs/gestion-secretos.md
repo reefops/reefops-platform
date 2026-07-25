@@ -193,7 +193,28 @@ La secuencia es:
    Kubernetes se prueba separadamente en la autoridad activa;
 7. registrar RPO/RTO, versiones, digest, actor, correlación y resultado;
 8. retirar la Kustomization mediante GitOps y confirmar la eliminación de
-   workloads y PVC temporales.
+   workloads, PVC y referencias PV temporales.
+
+El cierre no se redacta manualmente. `openbao-verify-recovery` comprueba con una
+identidad restaurada el contrato audit runtime, mounts, Raft, revisión GitOps y
+salud inalterada del activo. `openbao-recovery-evidence-seal` cifra por
+streaming el audit y un bundle con los registros canónicos de restore y
+verificación, sus hashes y el inventario bijectivo de PVC/PV. El sellado usa
+temporales y renames atómicos y puede reanudar un resultado incierto.
+Finalmente, `openbao-recovery-close` exige esa verificación concreta, comprueba
+los digest, descifra y valida el bundle, enlaza causalmente el restore y
+calcula:
+
+- RPO observado: inicio del drill menos creación del snapshot;
+- RTO observado: verificación satisfactoria menos inicio del drill.
+
+El cierre añade bajo lock una única operación por `closure_operation_id` y
+mueve atómicamente `current.json` a `attempts/<drill_id>.json` con fase
+`closed-success-eligible-for-cleanup`. Si el proceso cae después del append, el
+retry detecta la misma operación y completa únicamente el archivo del estado.
+El JSONL local sigue siendo evidencia operativa mutable; la integridad
+portable la aportan los artefactos cifrados y sus digest, no una afirmación
+WORM que el filesystem local no puede garantizar.
 
 El script de restore debe recibir y comprobar explícitamente el endpoint y el
 cluster ID objetivo. La aprobación indicará el contexto y namespace de
@@ -212,8 +233,13 @@ Las tareas `openbao-recovery-preflight` y `openbao-recovery-cleanup-verify`
 materializan las guardas anterior y posterior. El preflight falla si el
 contexto no es el esperado, la autoridad activa deja de estar preparada, el
 target no es el HelmRelease aislado, aparece RBAC cluster-wide o el target ya
-está inicializado. La comprobación de limpieza falla mientras exista cualquier
-namespace, HelmRelease, StatefulSet, pod o PVC del ensayo.
+está inicializado. También compara el contrato audit completo persistible:
+driver, descripción, `file_path`, modo y `log_raw`. La comprobación de limpieza
+falla mientras exista cualquier namespace, HelmRelease, StatefulSet, pod, PVC
+o PV todavía enlazado al namespace del ensayo.
+El cleanup se liga al UID original del clúster, registra revisión GitOps y una
+operación idempotente causada por el cierre, y produce un artefacto separado
+`cleanup-verified-closed-complete` sin reabrir el archivo 0400 del drill.
 
 `openbao-recovery-init` guarda el resultado sensible de la inicialización
 temporal únicamente en `/dev/shm` dentro del pod, con modo `0600`. Las claves
@@ -223,6 +249,27 @@ como argumentos ni se escriben en el host. Antes de inicializar se comprueba
 que `/dev/shm` sea `tmpfs` y un lock atómico impide ejecuciones concurrentes.
 El estado local del drill contiene únicamente identificadores, revisión GitOps
 y tiempos.
+
+### Recuperación de la autoridad activa
+
+La restauración destructiva de `reefops-secrets` permanece deliberadamente sin
+entrypoint ejecutable. El motor interno de restore no se publica en Taskfile y
+mantiene una allowlist constante que solo admite `isolated-recovery`; no puede
+convertirse en un motor genérico indicando destino mediante variables.
+
+Habilitar recuperación activa exigirá antes un diseño e implementación
+separados para `in-place` y `disaster-recovery`. Como mínimo deberá existir un
+fence de mantenimiento verificable, consumidores y emisores detenidos,
+snapshot preventivo cifrado y verificado, aprobación de un solo uso ligada a
+ambos digest, identidad completa del target, revisión Flux, CA, `node_id`,
+actor, caducidad e identificador de cambio o incidente. Un resultado incierto
+no será reintentable automáticamente.
+
+Hasta disponer de ese coordinador, la recuperación real se ejecutará adaptando
+el procedimiento ensayado bajo revisión humana, no relajando la allowlist ni
+reutilizando aprobaciones del entorno aislado. Esta limitación fail-closed es
+parte del método limpio y evita presentar una operación destructiva
+insuficientemente cercada como automatización terminada.
 
 `openbao-recovery-restore` crea su propio port-forward al Service aislado,
 extrae solo la CA pública a un directorio temporal y consume el token raíz
@@ -237,10 +284,13 @@ diagnóstico y exige nueva aprobación antes de reintentar.
 El procedimiento ejecutable y sus comprobaciones se definen en el
 [runbook de recuperación del repositorio de producto](https://github.com/reefops/reefops/blob/main/docs/runbooks/openbao-recuperacion.md).
 
-Los StatefulSets conservarán sus PVC al eliminarse o escalarse. OpenBao usará
-usuario no root, seccomp `RuntimeDefault`, privilege escalation deshabilitada,
-capabilities mínimas y requests/limits explícitos. Un cambio de esos controles
-deberá renderizarse y probarse antes de promoverse.
+El StatefulSet activo conservará sus PVC (`Retain`) al eliminarse o escalarse.
+El StatefulSet temporal del drill usa `Delete` para que el prune GitOps retire
+sus volúmenes después del cierre y del inventario de evidencias; esta diferencia
+es deliberada y no se trasladará al activo. OpenBao usará usuario no root,
+seccomp `RuntimeDefault`, privilege escalation deshabilitada, capabilities
+mínimas y requests/limits explícitos. Un cambio de esos controles deberá
+renderizarse y probarse antes de promoverse.
 
 ## 3. GitHub Secrets
 
