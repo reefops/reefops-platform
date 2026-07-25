@@ -108,7 +108,9 @@ funcional de accesos a medios.
 
 `task seaweedfs-verify` exige antes de mutar:
 
-- `main` local, fuente Flux y reconciliaciones en revisiones exactas;
+- `main` local, fuente Flux y reconciliaciones en revisiones exactas, incluyendo
+  tanto el commit de plataforma como el commit GitOps de la configuración
+  privada neutral de entrega de secretos;
 - HelmRelease, ExternalSecret y todos los pods preparados;
 - chart OCI e imagen con los digests declarados;
 - servicios internos y ausencia de recursos de exposición;
@@ -149,6 +151,11 @@ el volumen SMB del QNAP, pero el IaC y el contrato de recuperación no dependen
 de QNAP, QuObjects ni un proveedor cloud. Otra instalación puede usar otro NAS,
 un disco extraíble o un volumen remoto sin cambiar SeaweedFS ni sus
 consumidores.
+
+La evidencia de recuperación registra ambas revisiones. El runbook rechaza una
+ejecución si `reefops-data-secret-delivery-config` no aplica el commit GitOps
+activo o si controller, secreto, stack y configuración SeaweedFS no aplican el
+commit local de plataforma.
 
 Este ensayo demuestra portabilidad lógica de objetos dentro del proveedor
 activo; no demuestra disaster recovery tras perder los PV o la VM de Docker

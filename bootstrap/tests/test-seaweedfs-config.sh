@@ -148,7 +148,10 @@ if (
 fi
 
 verifier="${project_root}/bootstrap/scripts/verify-seaweedfs.sh"
+recovery_verifier="${project_root}/bootstrap/scripts/verify-seaweedfs-recovery.sh"
 for contract in \
+  'reefops-data-secret-delivery-config' \
+  'reefops-external-secrets-data' \
   'reefops-seaweedfs-secret' \
   'reefops-seaweedfs-stack' \
   'reefops-seaweedfs-config' \
@@ -171,6 +174,16 @@ for contract in \
   fi
 done
 
+for contract in \
+  'gitops_revision' \
+  'reefops-data-secret-delivery-config' \
+  'reefops-external-secrets-data'; do
+  if ! grep -F "${contract}" "${recovery_verifier}" >/dev/null; then
+    echo "La recuperación no traza la dependencia neutral: ${contract}" >&2
+    exit 1
+  fi
+done
+
 if grep -F '.KeyCount == 1' "${verifier}" >/dev/null; then
   echo "La aceptación depende de KeyCount, omitido por SeaweedFS 4.39." >&2
   exit 1
@@ -181,7 +194,6 @@ if grep -F 'flux get source git' "${verifier}" >/dev/null; then
   exit 1
 fi
 
-recovery_verifier="${project_root}/bootstrap/scripts/verify-seaweedfs-recovery.sh"
 for revision_verifier in "${verifier}" "${recovery_verifier}"; do
   if ! grep -F 'sub("^(main@)?sha1:"; "")' \
     "${revision_verifier}" >/dev/null; then

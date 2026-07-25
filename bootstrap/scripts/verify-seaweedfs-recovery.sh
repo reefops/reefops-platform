@@ -47,6 +47,7 @@ evidence_chains_valid="false"
 result="failure"
 failure_phase="preflight"
 platform_revision=""
+gitops_revision=""
 object_sha256=""
 encrypted_sha256=""
 cluster_resource_id=""
@@ -70,6 +71,7 @@ record_evidence() {
       --arg environment_id "${environment_id}" \
       --arg cluster_context "${cluster_context}" \
       --arg platform_revision "${platform_revision}" \
+      --arg gitops_revision "${gitops_revision}" \
       --arg object_sha256 "${object_sha256}" \
       --arg encrypted_sha256 "${encrypted_sha256}" \
       --arg cluster_resource_id "${cluster_resource_id}" \
@@ -94,6 +96,7 @@ record_evidence() {
         environment_id: $environment_id,
         cluster_context: $cluster_context,
         platform_revision: $platform_revision,
+        gitops_revision: $gitops_revision,
         payload_classification: "synthetic",
         object_sha256: $object_sha256,
         encrypted_sha256: $encrypted_sha256,
@@ -230,13 +233,6 @@ if [[ "$(git -C "${project_root}" branch --show-current)" != "main" ]] ||
   exit 2
 fi
 platform_revision="$(git -C "${project_root}" rev-parse HEAD)"
-if [[ ! -s "${acceptance_evidence}" ]] ||
-  ! tail -n 1 "${acceptance_evidence}" |
-    jq -e --arg revision "${platform_revision}" \
-      '.result == "success" and .platform_revision == $revision' >/dev/null; then
-  echo "Falta una aceptación S3 satisfactoria para la revisión activa." >&2
-  exit 2
-fi
 if [[ "$(kubectl config current-context)" != "${cluster_context}" ]] ||
   [[ "$(
     kubectl get namespace "${namespace}" \
@@ -245,7 +241,37 @@ if [[ "$(kubectl config current-context)" != "${cluster_context}" ]] ||
   echo "Contexto o entorno Kubernetes inesperado." >&2
   exit 2
 fi
+gitops_revision="$(
+  kubectl -n flux-system get gitrepository flux-system -o json |
+    jq -er '.status.artifact.revision | sub("^(main@)?sha1:"; "")'
+)"
+if [[ ! -s "${acceptance_evidence}" ]] ||
+  ! tail -n 1 "${acceptance_evidence}" |
+    jq -e \
+      --arg platform_revision "${platform_revision}" \
+      --arg gitops_revision "${gitops_revision}" \
+      '.result == "success" and
+       .platform_revision == $platform_revision and
+       .gitops_revision == $gitops_revision' >/dev/null; then
+  echo "Falta una aceptación S3 satisfactoria para las revisiones activas." >&2
+  exit 2
+fi
+data_config_revision="$(
+  kubectl -n flux-system get kustomization \
+    reefops-data-secret-delivery-config -o json |
+    jq -er '
+      select(.status.conditions[] |
+        .type == "Ready" and .status == "True") |
+      .status.lastAppliedRevision |
+      sub("^(main@)?sha1:"; "")
+    '
+)"
+if [[ "${data_config_revision}" != "${gitops_revision}" ]]; then
+  echo "La configuración privada de entrega no aplica la revisión GitOps exacta." >&2
+  exit 2
+fi
 for reconciliation in \
+  reefops-external-secrets-data \
   reefops-seaweedfs-secret \
   reefops-seaweedfs-stack \
   reefops-seaweedfs-config; do
@@ -395,6 +421,7 @@ jq -n \
   --arg actor "$(id -un)" \
   --arg environment_id "${environment_id}" \
   --arg platform_revision "${platform_revision}" \
+  --arg gitops_revision "${gitops_revision}" \
   --arg archive_sha256 "${archive_sha256}" \
   --arg encrypted_sha256 "${encrypted_sha256}" \
   --arg object_sha256 "${object_sha256}" \
@@ -407,6 +434,7 @@ jq -n \
     actor: $actor,
     environment_id: $environment_id,
     platform_revision: $platform_revision,
+    gitops_revision: $gitops_revision,
     chart_digest: "sha256:e06855fbad1c4f74e7f1d25af477668e6be247ab213b940ac6229533a8b87a4b",
     image_digest: "sha256:c7d6c721b30ae711db766bbbfd40192776e263d4e51e22f57baef7bef93c12c6",
     archive_sha256: $archive_sha256,
