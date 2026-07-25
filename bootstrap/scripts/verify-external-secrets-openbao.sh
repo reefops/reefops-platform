@@ -32,6 +32,7 @@ state_changed="false"
 restoration_result="not-required"
 result="failure"
 error_code="verification-failed"
+phase="initialization"
 cluster_id=""
 flux_revision=""
 store_uid=""
@@ -120,7 +121,7 @@ restore_state() {
   bao policy write "${policy_name}" "${previous_policy}" >/dev/null
   restored_policy="${temp_dir}/restored-policy.hcl"
   bao policy read -format=json "${policy_name}" |
-    jq -er '.rules' >"${restored_policy}"
+    jq -er '.policy' >"${restored_policy}"
   if [[ "$(normalize_policy "${restored_policy}")" != \
     "$(normalize_policy "${previous_policy}")" ]]; then
     return 1
@@ -168,6 +169,7 @@ finish() {
     --arg finished_at "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
     --arg result "${result}" \
     --arg error_code "${error_code}" \
+    --arg failure_phase "${phase}" \
     --arg restoration_result "${restoration_result}" \
     --arg correlation_id "${correlation_id}" \
     --arg causation_id "${causation_id}" \
@@ -201,6 +203,7 @@ finish() {
       finished_at: $finished_at,
       result: $result,
       error: (if $result == "success" then null else $error_code end),
+      failure_phase: (if $result == "success" then null else $failure_phase end),
       correlation_id: $correlation_id,
       causation_id: $causation_id
     }' >>"${audit_dir}/operations.jsonl"
@@ -216,6 +219,7 @@ if ! mkdir "${lock_dir}" 2>/dev/null; then
 fi
 lock_acquired="true"
 
+phase="target-validation"
 if [[ "$(kubectl config current-context)" != "${cluster_context}" ]]; then
   error_code="unexpected-kubernetes-context"
   exit 1
@@ -256,6 +260,7 @@ export BAO_ADDR="https://127.0.0.1:${local_port}"
 export BAO_CACERT="${ca_file}"
 export BAO_TLS_SERVER_NAME="openbao.reefops-secrets.svc"
 
+phase="openbao-authentication-validation"
 for _ in $(seq 1 30); do
   if bao status -format=json >"${temp_dir}/status.json" 2>/dev/null; then
     break
@@ -283,6 +288,7 @@ bao audit list -format=json | jq -e 'has("file/")' >/dev/null
 bao token lookup -format=json |
   jq -e '.data.policies | index("root") != null' >/dev/null
 
+phase="eso-readiness-validation"
 flux_revision="$(
   kubectl --context "${cluster_context}" -n flux-system \
     get kustomization reefops-external-secrets-openbao \
@@ -310,8 +316,9 @@ external_secret_generation="$(
     get externalsecret "${external_secret}" -o jsonpath='{.metadata.generation}'
 )"
 
+phase="state-capture"
 bao policy read -format=json "${policy_name}" |
-  jq -er '.rules' >"${previous_policy}"
+  jq -er '.policy' >"${previous_policy}"
 if [[ "$(normalize_policy "${previous_policy}")" != \
   "$(normalize_policy "${policy_file}")" ]]; then
   error_code="openbao-policy-drift"
@@ -324,6 +331,7 @@ wait_for_value "${previous_value}"
 audit_login_before="$(audit_count auth/kubernetes/login update)"
 audit_read_before="$(audit_count ci/data/eso-smoke-test read)"
 
+phase="refresh-validation"
 probe_value="$(uuidgen | tr '[:upper:]' '[:lower:]')"
 bao kv put ci/eso-smoke-test status="${probe_value}" >/dev/null
 state_changed="true"
@@ -340,11 +348,13 @@ printf '%s\n' \
 chmod 0600 "${deny_policy}"
 bao policy write "${policy_name}" "${deny_policy}" >/dev/null
 
+phase="revocation-validation"
 blocked_value="$(uuidgen | tr '[:upper:]' '[:lower:]')"
 bao kv put ci/eso-smoke-test status="${blocked_value}" >/dev/null
 wait_for_condition externalsecret "${external_secret}" False
 wait_for_value "${probe_value}" 2
 
+phase="audit-validation"
 audit_login_after="$(audit_count auth/kubernetes/login update)"
 audit_read_after="$(audit_count ci/data/eso-smoke-test read)"
 if ((audit_login_after <= audit_login_before ||
@@ -353,7 +363,9 @@ if ((audit_login_after <= audit_login_before ||
   exit 1
 fi
 
+phase="restoration"
 restore_state
 result="success"
 error_code=""
+phase="complete"
 echo "ESO y OpenBao verificados con refresco, revocación, auditoría y recuperación."
