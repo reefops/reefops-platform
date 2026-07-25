@@ -1,0 +1,31 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: reefops-postgresql-backup
+  namespace: reefops-data
+  labels:
+    app.kubernetes.io/name: reefops-postgresql
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+spec:
+  retentionPolicy: 7d
+  configuration:
+    destinationPath: s3://reefops-postgresql-backup/
+    endpointURL: http://reefops-seaweedfs-s3.reefops-data.svc:8333
+    s3Credentials:
+      accessKeyId:
+        name: postgresql-barman-s3
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: postgresql-barman-s3
+        key: ACCESS_SECRET_KEY
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+  instanceSidecarConfiguration:
+    env:
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required

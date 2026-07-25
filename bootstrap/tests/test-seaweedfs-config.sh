@@ -36,9 +36,15 @@ if ! yq eval -e '
   .spec.target.name == "seaweedfs-s3-config" and
   .spec.target.creationPolicy == "Owner" and
   .spec.target.deletionPolicy == "Delete" and
-  (.spec.data | length) == 2 and
+  (.spec.data | length) == 4 and
   (.spec.target.template.data.seaweedfs_s3_config |
-    contains("\"actions\":[\"Admin\",\"Read\",\"Write\"]"))
+    contains("\"actions\":[\"Admin\",\"Read\",\"Write\"]")) and
+  (.spec.target.template.data.seaweedfs_s3_config |
+    contains("\"name\":\"reefops-barman-cloud\"")) and
+  (.spec.target.template.data.seaweedfs_s3_config |
+    contains("\"Read:reefops-postgresql-backup\"")) and
+  (.spec.target.template.data.seaweedfs_s3_config |
+    contains("\"Write:reefops-postgresql-backup\""))
   ' <<<"${external_secret}" >/dev/null; then
   echo "La entrega S3 no conserva TLS, scope o template autenticado." >&2
   exit 1
@@ -100,6 +106,9 @@ fi
 if ! grep -F 'path "platform/data/seaweedfs/s3"' \
   "${project_root}/bootstrap/openbao/policies/seaweedfs-external-secrets.hcl" \
   >/dev/null ||
+  ! grep -F 'path "platform/data/postgresql/barman-s3"' \
+    "${project_root}/bootstrap/openbao/policies/seaweedfs-external-secrets.hcl" \
+    >/dev/null ||
   grep -E 'capabilities.*(create|update|delete|list|sudo)' \
     "${project_root}/bootstrap/openbao/policies/seaweedfs-external-secrets.hcl" \
     >/dev/null; then

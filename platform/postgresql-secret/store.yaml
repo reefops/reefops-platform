@@ -1,0 +1,21 @@
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: openbao-postgresql
+  namespace: reefops-data
+spec:
+  provider:
+    vault:
+      server: https://openbao.reefops-secrets.svc:8200
+      path: platform
+      version: v2
+      caProvider:
+        type: ConfigMap
+        name: openbao-ca-bundle
+        key: ca.crt
+      auth:
+        kubernetes:
+          mountPath: kubernetes
+          role: reefops-postgresql-external-secrets
+          serviceAccountRef:
+            name: external-secrets-postgresql-openbao

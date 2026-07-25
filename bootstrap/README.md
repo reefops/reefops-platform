@@ -68,3 +68,12 @@ almacenamiento de recuperación externo.
 Los secretos CI allowlisted se replican desde OpenBao con `task
 ci-secret-sync`. El valor viaja directamente por `stdin` hacia `gh`; nunca se
 guarda en una variable, argumento, fichero temporal o log.
+
+## PostgreSQL
+
+El procedimiento de bootstrap y recuperación está en
+`docs/postgresql.md`. La secuencia separa autoridad, entrega, recarga de la ACL,
+creación del bucket y reconciliación del Cluster. No se debe aplicar
+manualmente ninguno de los manifiestos de `platform/postgresql-*`; las únicas
+operaciones locales admitidas son las tareas auditadas de credenciales, bucket,
+aceptación y recuperación.

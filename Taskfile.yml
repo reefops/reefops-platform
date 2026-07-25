@@ -19,6 +19,11 @@ tasks:
       - kubectl kustomize platform/seaweedfs-secret >/dev/null
       - kubectl kustomize platform/seaweedfs-stack >/dev/null
       - kubectl kustomize platform/seaweedfs-config >/dev/null
+      - kubectl kustomize platform/cloudnative-pg-stack >/dev/null
+      - kubectl kustomize platform/barman-cloud-stack >/dev/null
+      - kubectl kustomize platform/postgresql-secret >/dev/null
+      - kubectl kustomize platform/postgresql-cluster >/dev/null
+      - kubectl kustomize platform/postgresql-config >/dev/null
       - kubectl kustomize recovery/openbao >/dev/null
       - kubectl kustomize infrastructure/base | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize environments/development | kubeconform -strict -ignore-missing-schemas -summary
@@ -30,6 +35,11 @@ tasks:
       - kubectl kustomize platform/seaweedfs-secret | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-config | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/cloudnative-pg-stack | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/barman-cloud-stack | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/postgresql-secret | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/postgresql-cluster | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/postgresql-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize recovery/openbao | kubeconform -strict -ignore-missing-schemas -summary
       - bash -n bootstrap/scripts/*.sh bootstrap/scripts/lib/*.sh bootstrap/tests/*.sh
       - shellcheck bootstrap/scripts/*.sh bootstrap/scripts/lib/*.sh
@@ -45,6 +55,8 @@ tasks:
       - ./bootstrap/tests/test-envoy-gateway-evidence-backup.sh
       - ./bootstrap/tests/test-seaweedfs-artifacts.sh
       - ./bootstrap/tests/test-seaweedfs-config.sh
+      - ./bootstrap/tests/test-postgresql-artifacts.sh
+      - ./bootstrap/tests/test-postgresql-config.sh
       - ./bootstrap/tests/test-openbao-recovery-close.sh
       - ./bootstrap/tests/test-openbao-recovery-target-allowlist.sh
       - gitleaks git --no-banner --redact --exit-code 1 .
@@ -78,6 +90,16 @@ tasks:
     desc: Cifra un backup sintético externo y prueba restore aislado
     cmds:
       - ./bootstrap/scripts/verify-seaweedfs-recovery.sh
+
+  postgresql-backup-credentials-bootstrap:
+    desc: Crea una sola vez la identidad Barman y la custodia en OpenBao
+    cmds:
+      - ./bootstrap/scripts/run-bootstrap-postgresql-backup-credentials.sh
+
+  postgresql-backup-bucket-prepare:
+    desc: Crea idempotentemente el bucket y prueba la identidad Barman acotada
+    cmds:
+      - ./bootstrap/scripts/prepare-postgresql-backup-bucket.sh
 
   observability-verify:
     desc: Verifica alertas, persistencia y evidencia de observabilidad

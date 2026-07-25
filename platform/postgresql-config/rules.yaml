@@ -1,0 +1,44 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: reefops-postgresql
+  namespace: reefops-observability
+  labels:
+    app.kubernetes.io/name: reefops-postgresql
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+    release: reefops-observability
+spec:
+  groups:
+    - name: reefops.postgresql.availability
+      rules:
+        - alert: ReefOpsPostgreSQLClusterNotHealthy
+          expr: cnpg_collector_up{namespace="reefops-data",cluster="reefops-postgresql"} != 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: PostgreSQL no está saludable
+        - alert: ReefOpsPostgreSQLReplicationLag
+          expr: cnpg_pg_replication_lag{namespace="reefops-data",cluster="reefops-postgresql"} > 60
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: La réplica PostgreSQL acumula más de 60 segundos
+    - name: reefops.postgresql.backup
+      rules:
+        - alert: ReefOpsPostgreSQLBackupStale
+          expr: time() - barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace="reefops-data",cluster="reefops-postgresql"} > 93600
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: No hay backup PostgreSQL válido en las últimas 26 horas
+        - alert: ReefOpsPostgreSQLWalArchiveFailed
+          expr: barman_cloud_cloudnative_pg_io_last_failed_backup_timestamp{namespace="reefops-data",cluster="reefops-postgresql"} > barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace="reefops-data",cluster="reefops-postgresql"}
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: El último intento de backup PostgreSQL falló
