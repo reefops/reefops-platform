@@ -128,6 +128,11 @@ y temporales incluso al fallar. Cada fase registra revisión, recursos, actor,
 autorización, entorno, correlación, causación, checksums y resultado, nunca
 credenciales ni payload privado.
 
+El contrato `ListObjectsV2` comprueba la colección `Contents` y la clave exacta.
+SeaweedFS 4.39 omite `KeyCount` en esta respuesta aunque enumera correctamente
+los objetos; esta desviación queda explícita y no se presenta como
+compatibilidad completa con todos los campos opcionales o derivados de S3.
+
 ## Backup y restore
 
 `task seaweedfs-recovery-verify` crea únicamente un objeto sintético, exporta
