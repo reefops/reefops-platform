@@ -54,7 +54,8 @@ task envoy-gateway-verify
 ```
 
 La prueba exige `main` limpio y la misma revisión en Git, la fuente de Flux y
-ambas Kustomizations. Comprueba CRD establecidas, Deployment preparado,
+la reconciliación de entorno y ambas Kustomizations de Envoy. Comprueba CRD
+establecidas, Deployment preparado,
 digests, hardening, métricas visibles y ausencia global de Gateway, rutas,
 Ingress, Envoy data plane, NodePort y LoadBalancer. Registra el resultado en
 una cadena JSONL local sin secretos.

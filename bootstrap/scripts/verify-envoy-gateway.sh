@@ -266,6 +266,7 @@ if [[ "${flux_revision}" != "sha1:${local_revision}" ]]; then
 fi
 
 for reconciliation in \
+  reefops-development-environment \
   reefops-envoy-gateway-stack \
   reefops-envoy-gateway-config; do
   applied_revision="$(
