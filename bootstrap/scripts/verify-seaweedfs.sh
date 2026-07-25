@@ -151,7 +151,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for command in kubectl flux jq yq aws curl openssl shasum; do
+for command in kubectl jq yq aws curl openssl shasum; do
   command -v "${command}" >/dev/null || {
     echo "Falta la herramienta ${command}." >&2
     exit 2
@@ -179,7 +179,7 @@ if [[ "$(git -C "${project_root}" branch --show-current)" != "main" ]] ||
 fi
 platform_revision="$(git -C "${project_root}" rev-parse HEAD)"
 gitops_revision="$(
-  flux get source git flux-system -n flux-system -o json |
+  kubectl -n flux-system get gitrepository flux-system -o json |
     jq -er '.status.artifact.revision | sub("^main@sha1:"; "")'
 )"
 
