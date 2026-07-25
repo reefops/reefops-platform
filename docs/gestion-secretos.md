@@ -130,6 +130,13 @@ recibirá una instancia ESO scoped o un mecanismo equivalente, CA pública,
 ServiceAccount y política propios. Una identidad de un operador de datos no
 podrá leer secretos de dominios, inteligencia o identidad.
 
+SeaweedFS será el primer consumidor real de ese patrón. `reefops-data` tendrá
+su propio `SecretStore`, ServiceAccount y rol OpenBao, limitados a
+`platform/seaweedfs/s3`. ESO compondrá el único fichero
+`seaweedfs_s3_config` que requiere el chart. El bootstrap será create-once:
+encontrar la ruta existente no imprime ni rota credenciales, y su ausencia
+genera valores localmente antes de escribirlos en OpenBao.
+
 La prueba de aceptación:
 
 1. verifica que OpenBao está inicializado, no sellado y auditando;
