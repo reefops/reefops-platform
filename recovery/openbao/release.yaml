@@ -103,7 +103,7 @@ spec:
           }
 
           audit "file" "file" {
-            description = "ReefOps isolated recovery drill audit"
+            description = "ReefOps OpenBao functional audit"
             options {
               file_path = "/openbao/audit/audit.log"
               mode = "0600"

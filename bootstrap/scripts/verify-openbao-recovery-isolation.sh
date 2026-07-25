@@ -68,6 +68,13 @@ if [[ "${runtime_node_id}" != "reefops-local-0" ]]; then
   echo "El node ID no coincide con la membresía Raft esperada." >&2
   exit 1
 fi
+if ! kubectl --context "${cluster_context}" -n "${namespace}" \
+  exec "${release}-0" -c openbao -- \
+  grep -Fq 'description = "ReefOps OpenBao functional audit"' \
+  /tmp/storageconfig.hcl; then
+  echo "El contrato declarativo del audit device no coincide con el origen." >&2
+  exit 1
+fi
 
 if kubectl --context "${cluster_context}" get clusterrolebinding \
   -o json |
