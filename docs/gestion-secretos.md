@@ -213,11 +213,14 @@ El estado local del drill contiene únicamente identificadores, revisión GitOps
 y tiempos.
 
 `openbao-recovery-restore` crea su propio port-forward al Service aislado,
-extrae solo la CA pública a un directorio temporal, consume el token raíz
-temporal desde memoria y construye la aprobación local acotada. Si el restore
-se aplica, elimina inmediatamente el material temporal del pod. Si el resultado
-es incierto, lo conserva en memoria para permitir diagnóstico y exige nueva
-aprobación antes de reintentar.
+extrae solo la CA pública a un directorio temporal y consume el token raíz
+temporal desde memoria. La aprobación no se autoemite: una tarea interactiva
+separada exige un challenge ligado al digest y persiste una aprobación acotada
+antes de que el ejecutor pueda arrancar. El ejecutor valida esquema, fase,
+contexto, UID Kubernetes y revisión GitOps, y usa el mismo lock atómico del
+drill. Si el restore se aplica, elimina inmediatamente el material temporal del
+pod. Si el resultado es incierto, lo conserva en memoria para permitir
+diagnóstico y exige nueva aprobación antes de reintentar.
 
 El procedimiento ejecutable y sus comprobaciones se definen en el
 [runbook de recuperación del repositorio de producto](https://github.com/reefops/reefops/blob/main/docs/runbooks/openbao-recuperacion.md).

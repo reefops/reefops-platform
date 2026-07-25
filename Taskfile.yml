@@ -80,6 +80,11 @@ tasks:
     cmds:
       - ./bootstrap/scripts/run-openbao-recovery-restore.sh
 
+  openbao-recovery-approve:
+    desc: Registra interactivamente la aprobación acotada del restore aislado
+    cmds:
+      - ./bootstrap/scripts/approve-openbao-recovery-restore.sh
+
   openbao-recovery-cleanup-verify:
     desc: Confirma que no quedan recursos del ensayo de recuperación
     cmds:
