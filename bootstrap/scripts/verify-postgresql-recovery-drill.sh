@@ -24,13 +24,29 @@ calculated_hash="$(
 marker="$(jq -er '.marker' "${state_file}")"
 restore_point="$(jq -er '.restore_point' "${state_file}")"
 backup_id="$(jq -er '.backup_id' "${state_file}")"
+target_cluster_json="$(
+  kubectl -n "${namespace}" get cluster "${target_cluster}" -o json
+)"
+if ! jq -e \
+  --arg backup_id "${backup_id}" \
+  --arg restore_point "${restore_point}" '
+    .spec.bootstrap.recovery.recoveryTarget.backupID == $backup_id and
+    .spec.bootstrap.recovery.recoveryTarget.targetName == $restore_point and
+    .spec.bootstrap.recovery.source == "origin" and
+    (.spec.externalClusters | length) == 1 and
+    .spec.externalClusters[0].plugin.parameters.serverName ==
+      "reefops-postgresql" and
+    .spec.externalClusters[0].plugin.isWALArchiver == false
+  ' <<<"${target_cluster_json}" >/dev/null; then
+  echo "El Cluster aplicado no conserva exactamente el objetivo PITR." >&2
+  exit 3
+fi
 target="$(
-  kubectl -n "${namespace}" get cluster "${target_cluster}" -o json |
-    jq -er '
-      select(any(.status.conditions[];
-        .type == "Ready" and .status == "True")) |
-      .status.currentPrimary
-    '
+  jq -er '
+    select(any(.status.conditions[];
+      .type == "Ready" and .status == "True")) |
+    .status.currentPrimary
+  ' <<<"${target_cluster_json}"
 )"
 restored_marker="$(
   kubectl -n "${namespace}" exec "${target}" -c postgres -- \
@@ -53,19 +69,12 @@ target_timeline="$(
   echo "La recuperación no promovió una timeline aislada." >&2
   exit 3
 }
-recovery_log="$(
-  kubectl -n "${namespace}" logs "${target}" -c postgres --since=30m
-)"
-grep -F "${restore_point}" <<<"${recovery_log}" >/dev/null || {
-  echo "Los logs no acreditan el restore point solicitado." >&2
-  exit 3
-}
 pvc_json="$(
   kubectl -n "${namespace}" get pvc \
     -l "cnpg.io/cluster=${target_cluster}" -o json |
     jq -ec '.items | select(length == 1) | .[0]'
 )"
-[[ "$(jq -r '.spec.storageClassName' <<<"${pvc_json}")" ==
+[[ "$(jq -r '.spec.storageClassName' <<<"${pvc_json}")" == \
   "reefops-hostpath-delete" ]] || {
   echo "El PVC del simulacro no es efímero." >&2
   exit 3

@@ -147,8 +147,9 @@ La promoción exige este orden:
 2. esperar a que Barman archive ese WAL;
 3. versionar en GitOps únicamente el identificador público del backup base y
    el nombre público del restore point, y reconciliar la raíz temporal;
-4. comprobar que el Cluster restaurado está listo, contiene exactamente el
-   marcador esperado y alcanzó el restore point;
+4. comprobar que el Cluster restaurado está listo, que su especificación
+   aplicada conserva exactamente el backup base y restore point custodiados,
+   que contiene el marcador esperado y que fue promovido a una timeline nueva;
 5. registrar revisiones GitOps/plataforma, backup, WAL, LSN, timeline,
    identidades Kubernetes, PVC, correlación y resultado;
 6. retirar la reconciliación mediante otra PR y exigir que Cluster, pods, PVC y
@@ -160,6 +161,12 @@ WAL propio, no comparte Service ni nombre con el origen y queda bajo default
 deny con salida limitada a DNS, API Kubernetes, plugin Barman y SeaweedFS S3.
 La prueba falla cerrada si detecta exposición norte-sur, un PVC retenido,
 credenciales distintas de ESO o un restore in-place.
+
+La aceptación no depende de los logs del pod temporal de recuperación: el
+operador puede eliminarlo al promover la instancia y esos logs no son una
+evidencia durable. La prueba enlaza el estado local íntegro con el `spec`
+admitido por Kubernetes y con el estado SQL resultante; registra ambas
+revisiones Git y las identidades de Cluster, PVC y PV antes del cleanup.
 
 El simulacro demuestra restauración física y PITR dentro del mismo backend S3.
 No demuestra recuperación ante pérdida simultánea del Mac y SeaweedFS; ese gate
