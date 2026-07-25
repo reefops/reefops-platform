@@ -1,0 +1,121 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openbao-recovery
+  namespace: reefops-openbao-recovery
+spec:
+  interval: 30m
+  timeout: 10m
+  releaseName: openbao-recovery
+  chart:
+    spec:
+      chart: openbao
+      version: 0.28.6
+      sourceRef:
+        kind: HelmRepository
+        name: openbao
+        namespace: flux-system
+      interval: 24h
+  install:
+    disableWait: true
+    remediation:
+      retries: 0
+  upgrade:
+    remediation:
+      retries: 0
+  values:
+    global:
+      tlsDisable: false
+    injector:
+      enabled: false
+    csi:
+      enabled: false
+    server:
+      authDelegator:
+        enabled: false
+      serviceAccount:
+        create: false
+        name: openbao-recovery
+      image:
+        repository: openbao/openbao
+        tag: "2.6.1@sha256:5b2486ab0fb90bbc788cc345b0a08616dfb375873ee8be5df3a2fd4d378a67e0"
+        pullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 1
+          memory: 1Gi
+      statefulSet:
+        securityContext:
+          pod:
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          container:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      persistentVolumeClaimRetentionPolicy:
+        whenDeleted: Delete
+        whenScaled: Delete
+      dataStorage:
+        enabled: true
+        size: 2Gi
+        accessMode: ReadWriteOnce
+      auditStorage:
+        enabled: true
+        size: 1Gi
+        accessMode: ReadWriteOnce
+      volumes:
+        - name: tls
+          secret:
+            secretName: openbao-recovery-tls
+            defaultMode: 0440
+      volumeMounts:
+        - name: tls
+          mountPath: /openbao/tls
+          readOnly: true
+      extraEnvironmentVars:
+        BAO_CACERT: /openbao/tls/ca.crt
+      standalone:
+        enabled: true
+        config: |
+          ui = false
+
+          listener "tcp" {
+            tls_disable = 0
+            address = "[::]:8200"
+            cluster_address = "[::]:8201"
+            tls_cert_file = "/openbao/tls/tls.crt"
+            tls_key_file = "/openbao/tls/tls.key"
+            tls_min_version = "tls13"
+          }
+
+          storage "raft" {
+            path = "/openbao/data"
+            node_id = "reefops-recovery-target-0"
+          }
+
+          audit "file" "file" {
+            description = "ReefOps isolated recovery drill audit"
+            options {
+              file_path = "/openbao/audit/audit.log"
+              mode = "0600"
+              log_raw = "false"
+            }
+          }
+
+      ha:
+        enabled: false
+      readinessProbe:
+        enabled: true
+      livenessProbe:
+        enabled: false
+    ui:
+      enabled: false

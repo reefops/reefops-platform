@@ -11,6 +11,9 @@ expected_manifest_digest="${REEFOPS_OPENBAO_RESTORE_MANIFEST_SHA256:?Define el d
 approval_file="${REEFOPS_OPENBAO_RESTORE_APPROVAL_FILE:?Define el artefacto de aprobación}"
 confirmation="${REEFOPS_CONFIRM_OPENBAO_RESTORE:-}"
 cluster_context="${REEFOPS_CLUSTER_CONTEXT:-docker-desktop}"
+target_scope="${REEFOPS_OPENBAO_RESTORE_TARGET_SCOPE:?Define active-authority o isolated-recovery}"
+target_namespace="${REEFOPS_OPENBAO_RESTORE_TARGET_NAMESPACE:?Define el namespace objetivo}"
+target_service="${REEFOPS_OPENBAO_RESTORE_TARGET_SERVICE:?Define el Service objetivo}"
 audit_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/reefops/openbao-restore"
 approvals_dir="${audit_dir}/approvals"
 consumed_dir="${audit_dir}/consumed"
@@ -30,9 +33,31 @@ target_cluster_id=""
 approval_id=""
 approval_sha256=""
 producer_version=""
+target_endpoint="${BAO_ADDR:?Define BAO_ADDR}"
+target_sni="${BAO_TLS_SERVER_NAME:?Define BAO_TLS_SERVER_NAME}"
+git_revision="$(git rev-parse HEAD)"
+kubernetes_cluster_uid="$(
+  kubectl --context "${cluster_context}" get namespace kube-system \
+    -o jsonpath='{.metadata.uid}'
+)"
 
 if [[ "${restore_mode}" != "in-place" && "${restore_mode}" != "disaster-recovery" ]]; then
   echo "REEFOPS_OPENBAO_RESTORE_MODE debe ser in-place o disaster-recovery." >&2
+  exit 1
+fi
+if [[ "${target_scope}" != "isolated-recovery" ]]; then
+  echo "Este comando solo permite restores en isolated-recovery." >&2
+  exit 1
+fi
+if [[ "$(kubectl config current-context)" != "${cluster_context}" ]]; then
+  echo "El contexto Kubernetes actual no coincide con el autorizado." >&2
+  exit 1
+fi
+if [[ "${target_namespace}" != "reefops-openbao-recovery" ||
+  "${target_service}" != "openbao-recovery" ||
+  "${target_endpoint}" != "https://127.0.0.1:18200" ||
+  "${target_sni}" != "openbao-recovery.reefops-openbao-recovery.svc" ]]; then
+  echo "El endpoint no corresponde al entorno aislado permitido." >&2
   exit 1
 fi
 expected_confirmation="restore-${expected_digest}"
@@ -92,6 +117,13 @@ finish() {
     --arg approval_id "${approval_id}" \
     --arg approval_sha256 "${approval_sha256}" \
     --arg target_cluster_context "${cluster_context}" \
+    --arg target_scope "${target_scope}" \
+    --arg target_namespace "${target_namespace}" \
+    --arg target_service "${target_service}" \
+    --arg target_endpoint "${target_endpoint}" \
+    --arg target_sni "${target_sni}" \
+    --arg git_revision "${git_revision}" \
+    --arg kubernetes_cluster_uid "${kubernetes_cluster_uid}" \
     --arg target_cluster_id "${target_cluster_id}" \
     --arg openbao_version "${openbao_version}" \
     --arg snapshot_version "${snapshot_version}" \
@@ -112,6 +144,13 @@ finish() {
       approval_id: $approval_id,
       approval_sha256: $approval_sha256,
       target_cluster_context: $target_cluster_context,
+      target_scope: $target_scope,
+      target_namespace: $target_namespace,
+      target_service: $target_service,
+      target_endpoint: $target_endpoint,
+      target_sni: $target_sni,
+      git_revision: $git_revision,
+      kubernetes_cluster_uid: $kubernetes_cluster_uid,
       target_cluster_id: $target_cluster_id,
       openbao_version: $openbao_version,
       snapshot: {
@@ -139,6 +178,29 @@ if [[ "${actual_digest}" != "${expected_digest}" ]]; then
 fi
 
 target_cluster_id="$(bao status -format=json | jq -er '.cluster_id')"
+kubectl --context "${cluster_context}" -n "${target_namespace}" \
+  get helmrelease "${target_service}" >/dev/null
+runtime_node_id="$(
+  # Expansion belongs to awk inside the container.
+  # shellcheck disable=SC2016
+  kubectl --context "${cluster_context}" -n "${target_namespace}" \
+    exec "${target_service}-0" -c openbao -- \
+    awk '/node_id/ {gsub(/[\" ]/, "", $3); print $3}' /tmp/storageconfig.hcl
+)"
+if [[ "${runtime_node_id}" != "reefops-recovery-target-0" ]]; then
+  echo "El node ID no corresponde al target aislado." >&2
+  exit 1
+fi
+in_pod_cluster_id="$(
+  kubectl --context "${cluster_context}" -n "${target_namespace}" \
+    exec "${target_service}-0" -c openbao -- \
+    bao status -format=json |
+    jq -er '.cluster_id'
+)"
+if [[ "${in_pod_cluster_id}" != "${target_cluster_id}" ]]; then
+  echo "BAO_ADDR no apunta al pod de recuperación autorizado." >&2
+  exit 1
+fi
 actual_manifest_digest="$(shasum -a 256 "${manifest_file}" | awk '{print $1}')"
 if [[ "${actual_manifest_digest}" != "${expected_manifest_digest}" ]]; then
   echo "El digest del manifiesto cifrado no coincide con la procedencia esperada." >&2
@@ -182,12 +244,26 @@ if ! jq -e \
   --arg cluster_id "${target_cluster_id}" \
   --arg actor "$(id -un)" \
   --arg now "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+  --arg target_namespace "${target_namespace}" \
+  --arg target_endpoint "${target_endpoint}" \
+  --arg target_scope "${target_scope}" \
+  --arg cluster_context "${cluster_context}" \
+  --arg kubernetes_cluster_uid "${kubernetes_cluster_uid}" \
+  --arg target_service "${target_service}" \
+  --arg target_sni "${target_sni}" \
   '
     .schema_version == "1" and
     (.approval_id | test("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")) and
     .encrypted_sha256 == $digest and
     .restore_mode == $restore_mode and
     .target_cluster_id == $cluster_id and
+    .target_namespace == $target_namespace and
+    .target_endpoint == $target_endpoint and
+    .target_scope == $target_scope and
+    .cluster_context == $cluster_context and
+    .kubernetes_cluster_uid == $kubernetes_cluster_uid and
+    .target_service == $target_service and
+    .target_sni == $target_sni and
     .actor == $actor and
     (.expires_at | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")) and
     .expires_at > $now
