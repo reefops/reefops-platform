@@ -67,6 +67,22 @@ helm template reefops-monitoring \
   --values "${temp_dir}/values.yaml" \
   >"${temp_dir}/rendered.yaml"
 
+post_render_dir="${temp_dir}/post-render"
+mkdir "${post_render_dir}"
+cp "${temp_dir}/rendered.yaml" "${post_render_dir}/rendered.yaml"
+jq -n \
+  --argjson patches "$(
+    yq eval -o=json \
+      '.spec.postRenderers[0].kustomize.patches' <<<"${release}"
+  )" \
+  '{
+    apiVersion: "kustomize.config.k8s.io/v1beta1",
+    kind: "Kustomization",
+    resources: ["rendered.yaml"],
+    patches: $patches
+  }' >"${post_render_dir}/kustomization.yaml"
+kubectl kustomize "${post_render_dir}" >"${temp_dir}/post-rendered.yaml"
+
 for resource_kind in ClusterRole ClusterRoleBinding; do
   if ! yq eval -e \
     "select(.kind == \"${resource_kind}\" and
@@ -82,6 +98,13 @@ for resource_kind in ClusterRole ClusterRoleBinding; do
         (.patch | contains(strenv(PATCH_MARKER))))" \
     <<<"${release}" >/dev/null; then
     echo "Falta la eliminación efectiva de ${resource_kind} del operador." >&2
+    exit 1
+  fi
+  if yq eval -e \
+    "select(.kind == \"${resource_kind}\" and
+      .metadata.name == \"reefops-monitoring-operator\")" \
+    "${temp_dir}/post-rendered.yaml" >/dev/null 2>&1; then
+    echo "El post-render no eliminó ${resource_kind} del operador." >&2
     exit 1
   fi
 done

@@ -12,6 +12,10 @@ separadamente en `observability-config` para no aceptar el Secret administrador,
 los sidecars ni la RBAC cluster-wide del subchart. Las imágenes efectivas,
 incluidas las que el operador inyecta, están fijadas por digest.
 
+El ownership ReefOps se expresa con labels propias de dominio. No se
+sobrescriben mediante `commonLabels` las labels estándar que el chart ya
+declara, porque una clave duplicada invalida el post-render estricto de Flux.
+
 `observability-config` se aplica únicamente después de que el stack esté
 preparado. Añade servicios y monitores para Flux, cert-manager y ESO, así como
 las reglas propias y las políticas de red.

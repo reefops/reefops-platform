@@ -49,7 +49,6 @@ spec:
   values:
     fullnameOverride: reefops-monitoring
     commonLabels:
-      app.kubernetes.io/part-of: reefops
       reefops.io/environment: development
       reefops.io/monitoring-instance: platform
 
