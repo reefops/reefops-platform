@@ -114,7 +114,9 @@ La revisión GitOps se obtiene de la API Kubernetes del `GitRepository` de Flux.
 No se usa la salida de presentación de `flux get`: su formato y opciones no son
 un contrato estable para automatización. Esta comprobación cubre la regresión
 detectada durante la primera aceptación, cuando `flux get source git -o json`
-falló antes de comenzar las pruebas S3.
+falló antes de comenzar las pruebas S3. La normalización admite explícitamente
+los dos formatos observados en las API de Flux, `main@sha1:<commit>` para una
+rama y `sha1:<commit>` para una fuente fijada directamente por commit.
 
 Después crea un bucket y objetos sintéticos, valida el subconjunto S3, reinicia
 los cuatro roles y confirma persistencia. El trap elimina bucket, port-forward

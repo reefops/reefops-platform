@@ -232,7 +232,7 @@ for reconciliation in \
         select(.status.conditions[] |
           .type == "Ready" and .status == "True") |
         .status.lastAppliedRevision |
-        sub("^main@sha1:"; "")
+        sub("^(main@)?sha1:"; "")
       '
   )"
   if [[ "${applied_revision}" != "${platform_revision}" ]]; then

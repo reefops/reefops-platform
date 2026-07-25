@@ -180,7 +180,7 @@ fi
 platform_revision="$(git -C "${project_root}" rev-parse HEAD)"
 gitops_revision="$(
   kubectl -n flux-system get gitrepository flux-system -o json |
-    jq -er '.status.artifact.revision | sub("^main@sha1:"; "")'
+    jq -er '.status.artifact.revision | sub("^(main@)?sha1:"; "")'
 )"
 
 if [[ "$(kubectl config current-context)" != "${cluster_context}" ]] ||
@@ -203,7 +203,7 @@ for reconciliation in \
         select(.status.conditions[] |
           .type == "Ready" and .status == "True") |
         .status.lastAppliedRevision |
-        sub("^main@sha1:"; "")
+        sub("^(main@)?sha1:"; "")
       '
   )"
   if [[ "${applied_revision}" != "${platform_revision}" ]]; then
