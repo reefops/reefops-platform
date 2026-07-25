@@ -145,6 +145,7 @@ for contract in \
   'reefops-seaweedfs-config' \
   'create-multipart-upload' \
   'abort-multipart-upload' \
+  '(.Contents // []) | length == 1' \
   'presign' \
   'delete pod' \
   'pvc_uids_before' \
@@ -160,6 +161,11 @@ for contract in \
     exit 1
   fi
 done
+
+if grep -F '.KeyCount == 1' "${verifier}" >/dev/null; then
+  echo "La aceptación depende de KeyCount, omitido por SeaweedFS 4.39." >&2
+  exit 1
+fi
 
 if grep -F 'flux get source git' "${verifier}" >/dev/null; then
   echo "La aceptación depende de una salida no estable del CLI de Flux." >&2

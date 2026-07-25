@@ -352,9 +352,15 @@ aws --endpoint-url "${endpoint}" s3api get-object \
 aws --endpoint-url "${endpoint}" s3api get-object-tagging \
   --bucket "${bucket}" --key "contract/object.bin" |
   jq -e '.TagSet | length == 2' >/dev/null
-aws --endpoint-url "${endpoint}" s3api list-objects-v2 \
+if ! aws --endpoint-url "${endpoint}" s3api list-objects-v2 \
   --bucket "${bucket}" --prefix "contract/" |
-  jq -e '.KeyCount == 1' >/dev/null
+  jq -e '
+    (.Contents // []) | length == 1 and
+    .[0].Key == "contract/object.bin"
+  ' >/dev/null; then
+  echo "ListObjectsV2 no devuelve la clave sintética exacta." >&2
+  exit 3
+fi
 presigned_url="$(
   aws --endpoint-url "${endpoint}" s3 presign \
     "s3://${bucket}/contract/object.bin" --expires-in 60
