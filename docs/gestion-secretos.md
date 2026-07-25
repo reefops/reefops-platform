@@ -44,6 +44,9 @@ plataforma independiente, mantendrá una CA local y un certificado interno para
 adaptadores y operadores autorizados. La clave de la CA vive como Secret
 Kubernetes gestionado por cert-manager; su backup y rotación forman parte de la
 recuperación de plataforma y nunca se copia a GitHub.
+Las variables que el chart deriva de TLS no se redefinen en valores locales;
+el render validado rechaza nombres de entorno duplicados antes de promocionar
+OpenBao.
 
 cert-manager renovará el certificado leaf, pero OpenBao solo relee sus ficheros
 TLS mediante `SIGHUP`. La recarga será una operación local auditada que compara
