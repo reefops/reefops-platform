@@ -8,11 +8,16 @@ timestamp="$(date -u '+%Y%m%dT%H%M%SZ')"
 operation_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
 correlation_id="${REEFOPS_CORRELATION_ID:-${operation_id}}"
 causation_id="${REEFOPS_CAUSATION_ID:-${operation_id}}"
-backup_file="${backup_dir}/openbao-${timestamp}.snap.age"
+backup_file="${backup_dir}/openbao-${timestamp}-${operation_id}.snap.age"
+manifest_file="${backup_file}.manifest.json.age"
 backup_digest=""
+manifest_digest=""
+openbao_version="$(bao version)"
+cluster_id=""
 result="failure"
 temp_dir="$(mktemp -d)"
 snapshot_file="${temp_dir}/openbao.snap"
+manifest_plain="${temp_dir}/manifest.json"
 token_origin="provided"
 
 install -d -m 0700 "${backup_dir}" "${audit_dir}"
@@ -23,6 +28,7 @@ finish() {
   exit_code=$?
   trap - EXIT
   rm -f "${snapshot_file}"
+  rm -f "${manifest_plain}"
   rmdir "${temp_dir}"
   if [[ "${token_origin}" == "kubernetes" ]]; then
     unset BAO_TOKEN
@@ -33,6 +39,10 @@ finish() {
     --arg created_at "${timestamp}" \
     --arg backup_file "${backup_file}" \
     --arg backup_digest "${backup_digest}" \
+    --arg manifest_file "${manifest_file}" \
+    --arg manifest_digest "${manifest_digest}" \
+    --arg openbao_version "${openbao_version}" \
+    --arg cluster_id "${cluster_id}" \
     --arg result "${result}" \
     --arg correlation_id "${correlation_id}" \
     --arg causation_id "${causation_id}" \
@@ -44,6 +54,10 @@ finish() {
       created_at: $created_at,
       backup_file: $backup_file,
       encrypted_sha256: (if $backup_digest == "" then null else $backup_digest end),
+      manifest_file: $manifest_file,
+      manifest_sha256: (if $manifest_digest == "" then null else $manifest_digest end),
+      openbao_version: $openbao_version,
+      cluster_id: $cluster_id,
       result: $result,
       error: (if $result == "success" then null else "backup-operation-failed" end),
       correlation_id: $correlation_id,
@@ -71,14 +85,35 @@ if [[ -z "${BAO_TOKEN:-}" ]]; then
   token_origin="kubernetes"
 fi
 
-bao status >/dev/null
+cluster_id="$(bao status -format=json | jq -er '.cluster_id')"
 bao operator raft snapshot save "${snapshot_file}"
 chmod 0600 "${snapshot_file}"
 age --recipient "${age_recipient}" --output "${backup_file}" "${snapshot_file}"
 chmod 0600 "${backup_file}"
 
 backup_digest="$(shasum -a 256 "${backup_file}" | awk '{print $1}')"
+jq -n \
+  --arg schema_version "1" \
+  --arg created_at "${timestamp}" \
+  --arg encrypted_backup "$(basename "${backup_file}")" \
+  --arg encrypted_sha256 "${backup_digest}" \
+  --arg openbao_version "${openbao_version}" \
+  --arg cluster_id "${cluster_id}" \
+  '{
+    schema_version: $schema_version,
+    created_at: $created_at,
+    encrypted_backup: $encrypted_backup,
+    encrypted_sha256: $encrypted_sha256,
+    openbao_version: $openbao_version,
+    cluster_id: $cluster_id
+  }' >"${manifest_plain}"
+chmod 0600 "${manifest_plain}"
+age --recipient "${age_recipient}" --output "${manifest_file}" "${manifest_plain}"
+chmod 0600 "${manifest_file}"
+manifest_digest="$(shasum -a 256 "${manifest_file}" | awk '{print $1}')"
 result="success"
 
 echo "Snapshot OpenBao cifrado: ${backup_file}"
 echo "SHA-256 cifrado: ${backup_digest}"
+echo "Manifiesto OpenBao: ${manifest_file}"
+echo "SHA-256 manifiesto cifrado: ${manifest_digest}"
