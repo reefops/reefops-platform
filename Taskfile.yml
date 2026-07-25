@@ -70,6 +70,16 @@ tasks:
     cmds:
       - ./bootstrap/scripts/verify-openbao-recovery-isolation.sh
 
+  openbao-recovery-init:
+    desc: Inicializa y abre temporalmente el target aislado sin exponer material
+    cmds:
+      - ./bootstrap/scripts/initialize-openbao-recovery.sh
+
+  openbao-recovery-restore:
+    desc: Aplica el snapshot al target aislado con guardas y aprobación local
+    cmds:
+      - ./bootstrap/scripts/run-openbao-recovery-restore.sh
+
   openbao-recovery-cleanup-verify:
     desc: Confirma que no quedan recursos del ensayo de recuperación
     cmds:

@@ -203,6 +203,22 @@ target no es el HelmRelease aislado, aparece RBAC cluster-wide o el target ya
 está inicializado. La comprobación de limpieza falla mientras exista cualquier
 namespace, HelmRelease, StatefulSet, pod o PVC del ensayo.
 
+`openbao-recovery-init` guarda el resultado sensible de la inicialización
+temporal únicamente en `/dev/shm` dentro del pod, con modo `0600`. Las claves
+se leen transitoriamente en memoria del proceso local y vuelven por la entrada
+estándar de `kubectl exec` para abrir ese target; nunca se imprimen, se pasan
+como argumentos ni se escriben en el host. Antes de inicializar se comprueba
+que `/dev/shm` sea `tmpfs` y un lock atómico impide ejecuciones concurrentes.
+El estado local del drill contiene únicamente identificadores, revisión GitOps
+y tiempos.
+
+`openbao-recovery-restore` crea su propio port-forward al Service aislado,
+extrae solo la CA pública a un directorio temporal, consume el token raíz
+temporal desde memoria y construye la aprobación local acotada. Si el restore
+se aplica, elimina inmediatamente el material temporal del pod. Si el resultado
+es incierto, lo conserva en memoria para permitir diagnóstico y exige nueva
+aprobación antes de reintentar.
+
 El procedimiento ejecutable y sus comprobaciones se definen en el
 [runbook de recuperación del repositorio de producto](https://github.com/reefops/reefops/blob/main/docs/runbooks/openbao-recuperacion.md).
 
