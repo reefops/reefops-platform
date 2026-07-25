@@ -94,6 +94,10 @@ reiniciar los tres componentes con estado, verifica que los UID de los PVC, las
 muestras, el silencio, el dashboard y el datasource se conservan, y elimina
 todo el estado sintético.
 
+La retirada espera hasta seis minutos para cubrir el `resolve_timeout` de
+Alertmanager; la desaparición temprana de la regla o de la serie en Prometheus
+no basta para declarar el ciclo resuelto.
+
 Cada ejecución escribe una evidencia JSONL sin secretos con identidad de
 entorno, operación, correlación, causación, actor, autorización, revisiones,
 digests, hash de manifiestos, UIDs, fases, tiempos, restauración y resultado.
