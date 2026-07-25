@@ -74,6 +74,7 @@ for contract in \
   'LoadBalancer' \
   'NodePort' \
   'serviceMonitor/reefops-observability/envoy-gateway' \
+  'for _ in {1..180}' \
   'record_evidence'; do
   if ! grep -F "${contract}" "${verifier}" >/dev/null; then
     echo "La aceptación no materializa el contrato: ${contract}" >&2
