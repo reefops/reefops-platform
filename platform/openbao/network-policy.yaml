@@ -14,6 +14,7 @@ spec:
         - namespaceSelector:
             matchLabels:
               reefops.io/openbao-access: "true"
+              reefops.io/environment: development
       ports:
         - protocol: TCP
           port: 8200

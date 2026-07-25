@@ -1,9 +1,12 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: cert-manager
+  name: reefops-prod-secrets
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
   labels:
     app.kubernetes.io/part-of: reefops
+    reefops.io/environment: production
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
@@ -11,10 +14,12 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: reefops-secrets
+  name: reefops-prod-system
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
   labels:
     app.kubernetes.io/part-of: reefops
-    reefops.io/environment: development
+    reefops.io/environment: production
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
@@ -22,11 +27,12 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: reefops-system
+  name: reefops-prod-domains
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
   labels:
     app.kubernetes.io/part-of: reefops
-    reefops.io/environment: development
-    reefops.io/openbao-access: "true"
+    reefops.io/environment: production
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
@@ -34,10 +40,12 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: reefops-domains
+  name: reefops-prod-intelligence
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
   labels:
     app.kubernetes.io/part-of: reefops
-    reefops.io/environment: development
+    reefops.io/environment: production
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
@@ -45,10 +53,12 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: reefops-intelligence
+  name: reefops-prod-data
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
   labels:
     app.kubernetes.io/part-of: reefops
-    reefops.io/environment: development
+    reefops.io/environment: production
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
@@ -56,10 +66,12 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: reefops-data
+  name: reefops-prod-identity
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
   labels:
     app.kubernetes.io/part-of: reefops
-    reefops.io/environment: development
+    reefops.io/environment: production
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
@@ -67,21 +79,12 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: reefops-identity
+  name: reefops-prod-observability
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
   labels:
     app.kubernetes.io/part-of: reefops
-    reefops.io/environment: development
-    pod-security.kubernetes.io/enforce: restricted
-    pod-security.kubernetes.io/audit: restricted
-    pod-security.kubernetes.io/warn: restricted
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: reefops-observability
-  labels:
-    app.kubernetes.io/part-of: reefops
-    reefops.io/environment: development
+    reefops.io/environment: production
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
