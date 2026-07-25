@@ -241,11 +241,21 @@ for reconciliation in \
   fi
 done
 chart_digest="$(
-  kubectl -n flux-system get ocirepository seaweedfs -o json |
-    jq -er '.status.artifact.digest'
+  kubectl -n flux-system get ocirepository seaweedfs -o json \
+    >"${temp_dir}/chart-source.json"
+  jq -er '.status.artifact.revision' "${temp_dir}/chart-source.json"
 )"
-if [[ "${chart_digest}" != \
-  "sha256:e06855fbad1c4f74e7f1d25af477668e6be247ab213b940ac6229533a8b87a4b" ]]; then
+if ! jq -e \
+  --arg oci_digest \
+    "sha256:e06855fbad1c4f74e7f1d25af477668e6be247ab213b940ac6229533a8b87a4b" \
+  --arg package_digest \
+    "sha256:dbecd4c1f3cd5ae2eac62f3a0ccd92c05c1b05a20bd2b5f574c1e69dec440da2" '
+    .spec.ref.digest == $oci_digest and
+    .status.artifact.revision == $oci_digest and
+    .status.artifact.digest == $package_digest and
+    any(.status.conditions[];
+      .type == "Ready" and .status == "True")
+  ' "${temp_dir}/chart-source.json" >/dev/null; then
   echo "El chart desplegado no coincide con el digest autorizado." >&2
   exit 2
 fi

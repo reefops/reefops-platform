@@ -59,7 +59,11 @@ Su índice declara:
 digest upstream y publica el paquete sin modificar en
 `ghcr.io/reefops/seaweedfs`. La raíz Flux consume ese artefacto OCI por
 digest, no el índice HTTP ni un tag flotante. La promoción registra ambos
-digests para conservar procedencia.
+digests para conservar procedencia. En la API del `OCIRepository`,
+`spec.ref.digest` y `status.artifact.revision` identifican el manifiesto OCI,
+mientras `status.artifact.digest` identifica el contenido `.tgz` extraído. La
+aceptación comprueba simultáneamente los tres campos para no confundir
+procedencia OCI con integridad del paquete.
 
 ## Credenciales
 

@@ -173,6 +173,15 @@ for revision_verifier in "${verifier}" "${recovery_verifier}"; do
     echo "Un verificador no normaliza las revisiones Git fijadas por commit." >&2
     exit 1
   fi
+  for chart_contract in \
+    ".spec.ref.digest == \$oci_digest" \
+    ".status.artifact.revision == \$oci_digest" \
+    ".status.artifact.digest == \$package_digest"; do
+    if ! grep -F "${chart_contract}" "${revision_verifier}" >/dev/null; then
+      echo "Un verificador confunde el manifiesto OCI y el paquete Helm." >&2
+      exit 1
+    fi
+  done
 done
 
 for contract in \
