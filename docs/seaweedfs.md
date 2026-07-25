@@ -137,9 +137,18 @@ compatibilidad completa con todos los campos opcionales o derivados de S3.
 
 `task seaweedfs-recovery-verify` crea únicamente un objeto sintético, exporta
 contenido, metadata, tags e inventario, cifra artefacto y manifiesto con `age`
-antes de escribirlos en el QNAP, elimina la fuente, restaura en otro bucket y
-compara checksums y metadata. Nunca sobrescribe un bucket existente y destruye
-ambos buckets de ensayo al finalizar.
+antes de escribirlos en un destino externo, elimina la fuente, restaura en otro
+bucket y compara checksums y metadata. Nunca sobrescribe un bucket existente y
+destruye ambos buckets de ensayo al finalizar.
+
+El destino es un adaptador de instalación. La tarea exige declarar
+`REEFOPS_SEAWEEDFS_BACKUP_ROOT` como raíz externa permitida y
+`REEFOPS_SEAWEEDFS_BACKUP_DIR` como un descendiente real de ella; rechaza `/`,
+traversal y escapes mediante enlaces simbólicos. En este Mac la raíz puede ser
+el volumen SMB del QNAP, pero el IaC y el contrato de recuperación no dependen
+de QNAP, QuObjects ni un proveedor cloud. Otra instalación puede usar otro NAS,
+un disco extraíble o un volumen remoto sin cambiar SeaweedFS ni sus
+consumidores.
 
 Este ensayo demuestra portabilidad lógica de objetos dentro del proveedor
 activo; no demuestra disaster recovery tras perder los PV o la VM de Docker

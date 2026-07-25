@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: reefops-cloudnative-pg-operator
+  namespace: reefops-observability
+  labels:
+    app.kubernetes.io/name: cloudnative-pg
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+    release: reefops-monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - reefops-database-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudnative-pg
+      app.kubernetes.io/instance: cloudnative-pg
+  podMetricsEndpoints:
+    - port: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: reefops-postgresql
+  namespace: reefops-observability
+  labels:
+    app.kubernetes.io/name: reefops-postgresql
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+    release: reefops-monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - reefops-data
+  selector:
+    matchLabels:
+      cnpg.io/cluster: reefops-postgresql
+  podMetricsEndpoints:
+    - port: metrics

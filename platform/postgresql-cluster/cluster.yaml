@@ -43,8 +43,6 @@ spec:
       log_min_duration_statement: "1000"
       password_encryption: scram-sha-256
       ssl_min_protocol_version: TLSv1.3
-  monitoring:
-    enablePodMonitor: true
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true

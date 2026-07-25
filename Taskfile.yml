@@ -16,6 +16,7 @@ tasks:
       - kubectl kustomize platform/observability-config >/dev/null
       - kubectl kustomize platform/envoy-gateway-stack >/dev/null
       - kubectl kustomize platform/envoy-gateway-config >/dev/null
+      - kubectl kustomize platform/external-secrets-data >/dev/null
       - kubectl kustomize platform/seaweedfs-secret >/dev/null
       - kubectl kustomize platform/seaweedfs-stack >/dev/null
       - kubectl kustomize platform/seaweedfs-config >/dev/null
@@ -32,6 +33,7 @@ tasks:
       - kubectl kustomize platform/observability-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/envoy-gateway-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/envoy-gateway-config | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/external-secrets-data | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-secret | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-config | kubeconform -strict -ignore-missing-schemas -summary
@@ -46,6 +48,7 @@ tasks:
       - shellcheck bootstrap/tests/*.sh
       - ./bootstrap/tests/test-environment-foundation.sh
       - ./bootstrap/tests/test-external-secrets-openbao.sh
+      - ./bootstrap/tests/test-external-secrets-data.sh
       - ./bootstrap/tests/test-openbao-artifacts.sh
       - ./bootstrap/tests/test-observability-artifacts.sh
       - ./bootstrap/tests/test-observability-config.sh
@@ -59,7 +62,7 @@ tasks:
       - ./bootstrap/tests/test-postgresql-config.sh
       - ./bootstrap/tests/test-openbao-recovery-close.sh
       - ./bootstrap/tests/test-openbao-recovery-target-allowlist.sh
-      - gitleaks git --no-banner --redact --exit-code 1 .
+      - gitleaks git --config .gitleaks.toml --no-banner --redact --exit-code 1 .
 
   openbao-configure:
     desc: Configura auditoría, políticas y auth Kubernetes tras init y unseal

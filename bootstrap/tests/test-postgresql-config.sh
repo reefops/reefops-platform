@@ -61,7 +61,11 @@ if ! yq eval -e '
   .spec.configuration.s3Credentials.accessKeyId.name ==
     "postgresql-barman-s3" and
   .spec.configuration.s3Credentials.secretAccessKey.name ==
-    "postgresql-barman-s3"
+    "postgresql-barman-s3" and
+  .spec.instanceSidecarConfiguration.resources.requests.cpu == "25m" and
+  .spec.instanceSidecarConfiguration.resources.requests.memory == "64Mi" and
+  .spec.instanceSidecarConfiguration.resources.limits.cpu == "500m" and
+  .spec.instanceSidecarConfiguration.resources.limits.memory == "512Mi"
   ' "${temp_dir}/postgresql-cluster.yaml" >/dev/null ||
   ! yq eval -e '
   select(.kind == "ScheduledBackup" and
@@ -83,6 +87,26 @@ policy_count="$(
   echo "Faltan políticas de red PostgreSQL." >&2
   exit 1
 }
+pod_monitor_count="$(
+  yq eval '
+    select(.kind == "PodMonitor" and
+      .metadata.labels.release == "reefops-monitoring") |
+    .metadata.name
+  ' "${temp_dir}/postgresql-config.yaml" |
+    sed '/^---$/d' | awk 'NF {count++} END {print count+0}'
+)"
+[[ "${pod_monitor_count}" -eq 2 ]] || {
+  echo "La observabilidad PostgreSQL no contiene los dos PodMonitors seleccionables." >&2
+  exit 1
+}
+if yq eval '
+  select(.kind == "Cluster" and .spec.monitoring.enablePodMonitor == true) |
+  .metadata.name
+  ' "${temp_dir}/postgresql-cluster.yaml" |
+  sed '/^---$/d' | grep -q .; then
+  echo "El ciclo de vida PostgreSQL no debe depender de CRDs de observabilidad." >&2
+  exit 1
+fi
 exposed_services="$(
   yq eval '
     select(.kind == "Service" and

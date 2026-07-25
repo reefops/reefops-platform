@@ -200,7 +200,9 @@ for revision_verifier in "${verifier}" "${recovery_verifier}"; do
 done
 
 for contract in \
-  '/Volumes/reefops-backup/seaweedfs' \
+  'REEFOPS_SEAWEEDFS_BACKUP_ROOT' \
+  'canonical_backup_root' \
+  'canonical_backup_dir' \
   'age --recipient' \
   'age --decrypt' \
   'archive_sha256' \

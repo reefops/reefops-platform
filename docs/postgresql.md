@@ -2,12 +2,14 @@
 
 ## Composición
 
-La plataforma separará cuatro raíces reconciliables:
+La plataforma separará seis raíces reconciliables:
 
-1. `cloudnative-pg-stack`: CRD, RBAC y operador CloudNativePG;
-2. `barman-cloud-stack`: plugin CNPG-I en el namespace del operador;
-3. `postgresql-secret`: identidad S3 dedicada entregada por OpenBao/ESO;
-4. `postgresql-cluster` y `postgresql-config`: operando, backup, red,
+1. `external-secrets-data`: controller ESO scoped a `reefops-data`;
+2. `cloudnative-pg-stack`: CRD, RBAC y operador CloudNativePG;
+3. `barman-cloud-stack`: plugin CNPG-I en el namespace del operador;
+4. `postgresql-secret`: identidad S3 dedicada entregada por OpenBao/ESO;
+5. `postgresql-cluster`: operando y backup;
+6. `postgresql-config`: red,
    observabilidad y dashboard.
 
 GitOps impondrá dependencias y `healthChecks`; el Cluster no podrá aparecer
@@ -42,6 +44,12 @@ ServiceAccount dedicadas. Las NetworkPolicy permitirán únicamente DNS, API
 Kubernetes, operador↔instancia, plugin↔instancia, backup↔S3 y scrape desde
 observabilidad. Los futuros clientes requerirán allowlist explícita.
 
+El controller `external-secrets-data` pertenece a la frontera de confianza del
+namespace, no a SeaweedFS ni a PostgreSQL. Cada consumidor mantiene su
+ServiceAccount, TokenRequest, `SecretStore`, política OpenBao y Secret destino.
+Esto permite retirar o sustituir un componente sin afectar al reconciliador de
+los demás.
+
 La ACL estática de SeaweedFS limita esa identidad al bucket
 `reefops-postgresql-backup` con acciones `Read`, `Write`, `List` y `Tagging`.
 No recibe `Admin` ni acceso a otros buckets. La identidad administrativa de
@@ -59,7 +67,7 @@ host o en producción.
 
 El primer despliegue se divide para evitar dependencias circulares:
 
-1. reconciliar operador CloudNativePG, plugin Barman y entrega de secreto;
+1. reconciliar controller ESO de datos, operador CloudNativePG y plugin Barman;
 2. ejecutar `task openbao-configure` desde `main`;
 3. crear la credencial con
    `task postgresql-backup-credentials-bootstrap`;
@@ -96,6 +104,11 @@ indisponibilidad, retraso de réplica —aunque development tenga una instancia,
 la regla ya es portable—, backup con más de 26 horas y último intento fallido.
 Grafana carga el dashboard `ReefOps / PostgreSQL`.
 
+Operador, plugin, Cluster y backup no dependen de observabilidad. Los
+`PodMonitor`, reglas y dashboards se aplican después y pueden fallar o retirarse
+sin impedir el servicio PostgreSQL. El sidecar Barman inyectado en la instancia
+declara requests y limits propios, además de los del Deployment central.
+
 ## Gate de aceptación
 
 La aceptación exigirá revisiones exactas, digests efectivos, ausencia de
@@ -105,8 +118,10 @@ reiniciará el pod y comprobará datos y UID del PVC.
 
 Después forzará un backup Barman, restaurará a un Cluster aislado, comparará
 marcador, extensiones, LSN/timeline y eliminará el destino. La copia externa se
-cifrará con `age` en el directorio privado allowlisted del QNAP. Evidencia y
-cleanup serán encadenados y fail-closed.
+cifrará con `age` en el destino privado allowlisted de la instalación.
+Development usa actualmente el QNAP, pero el contrato admite otro NAS, disco,
+cloud o medio offline sin sustituir SeaweedFS. Evidencia y cleanup serán
+encadenados y fail-closed.
 
 Un backup dentro del mismo SeaweedFS no es recuperación ante desastre. La
 aceptación local solo demuestra backup/PITR. El gate de producción permanecerá

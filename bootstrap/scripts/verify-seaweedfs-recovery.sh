@@ -2,6 +2,10 @@
 set -Eeuo pipefail
 
 backup_dir="${REEFOPS_SEAWEEDFS_BACKUP_DIR:?Define el directorio externo de backup}"
+backup_root="${REEFOPS_SEAWEEDFS_BACKUP_ROOT:?Define la raíz externa permitida}"
+if [[ "${backup_root}" != "/" ]]; then
+  backup_root="${backup_root%/}"
+fi
 age_recipient="${REEFOPS_SEAWEEDFS_BACKUP_RECIPIENT:?Define el recipient age}"
 age_identity="${REEFOPS_SEAWEEDFS_VERIFY_IDENTITY:?Define la identidad age}"
 project_root="$(git rev-parse --show-toplevel)"
@@ -175,13 +179,32 @@ if [[ ! -f "${age_identity}" ]] ||
   echo "La identidad age no corresponde al recipient de backup." >&2
   exit 2
 fi
-if [[ "${backup_dir}" != "/Volumes/reefops-backup/seaweedfs" &&
-  "${backup_dir}" != /Volumes/reefops-backup/seaweedfs/* ]]; then
-  echo "El backup debe salir de Docker Desktop hacia el volumen QNAP previsto." >&2
+if [[ "${backup_root}" != /* || "${backup_root}" == "/" ||
+  "${backup_dir}" != /* ||
+  "/${backup_root#/}/" == *"/../"* ||
+  "/${backup_dir#/}/" == *"/../"* ||
+  ! -d "${backup_root}" ]]; then
+  echo "La raíz de backup debe ser un directorio externo absoluto y existente." >&2
   exit 2
 fi
 
+canonical_backup_root="$(cd "${backup_root}" && pwd -P)"
+case "${backup_dir}" in
+  "${backup_root}"/*) ;;
+  *)
+    echo "El destino de backup queda fuera de la raíz externa permitida." >&2
+    exit 2
+    ;;
+esac
 install -d -m 0700 "${state_dir}" "${backup_dir}" "${export_dir}" "${restore_dir}"
+canonical_backup_dir="$(cd "${backup_dir}" && pwd -P)"
+case "${canonical_backup_dir}" in
+  "${canonical_backup_root}"/*) ;;
+  *)
+    echo "El destino resuelto queda fuera de la raíz externa permitida." >&2
+    exit 2
+    ;;
+esac
 if ! mkdir "${acceptance_lock}" 2>/dev/null; then
   echo "La aceptación S3 está siendo escrita; no se inicia el restore." >&2
   exit 2

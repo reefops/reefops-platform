@@ -29,7 +29,7 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: external-secrets
-              app.kubernetes.io/instance: external-secrets-seaweedfs
+              app.kubernetes.io/instance: external-secrets-data
       ports:
         - protocol: TCP
           port: 8200

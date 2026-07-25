@@ -31,5 +31,5 @@ roleRef:
   name: external-secrets-postgresql-openbao-token-request
 subjects:
   - kind: ServiceAccount
-    name: external-secrets-seaweedfs
+    name: external-secrets-data
     namespace: reefops-data
