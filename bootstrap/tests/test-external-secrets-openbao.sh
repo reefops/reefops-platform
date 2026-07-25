@@ -168,6 +168,8 @@ policy_field_count="$(
 if [[ "${policy_field_count}" -ne 2 ]] ||
   grep -F "jq -er '.rules'" "${verification_script}" >/dev/null ||
   ! grep -F 'failure_phase:' "${verification_script}" >/dev/null ||
+  ! grep -F 'error_code="platform-revision-mismatch"' \
+    "${verification_script}" >/dev/null ||
   ! grep -F 'Verificación ESO/OpenBao fallida en la fase' \
     "${verification_script}" >/dev/null; then
   echo "La verificación no respeta el contrato JSON ni identifica la fase fallida." >&2
