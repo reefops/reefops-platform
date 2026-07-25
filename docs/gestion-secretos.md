@@ -47,6 +47,10 @@ recuperación de plataforma y nunca se copia a GitHub.
 Las variables que el chart deriva de TLS no se redefinen en valores locales;
 el render validado rechaza nombres de entorno duplicados antes de promocionar
 OpenBao.
+El nodo local no usa `service_registration "kubernetes"` ni permisos para
+mutar pods: Kubernetes descubre el servicio estable y OpenBao mantiene el
+mínimo RBAC posible. Tampoco conserva opciones HCL retiradas por la versión
+fijada.
 
 cert-manager renovará el certificado leaf, pero OpenBao solo relee sus ficheros
 TLS mediante `SIGHUP`. La recarga será una operación local auditada que compara
