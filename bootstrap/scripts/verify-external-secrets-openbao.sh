@@ -19,6 +19,7 @@ lock_dir="${audit_dir}/verification.lock"
 operation_id="$(uuidgen | tr '[:upper:]' '[:lower:]')"
 correlation_id="${REEFOPS_CORRELATION_ID:-${operation_id}}"
 causation_id="${REEFOPS_CAUSATION_ID:-${operation_id}}"
+local_revision="$(git rev-parse HEAD)"
 started_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 local_port="${REEFOPS_ESO_BAO_PORT:-18201}"
 temp_dir="$(mktemp -d)"
@@ -156,7 +157,7 @@ finish() {
   jq -cn \
     --arg operation_id "${operation_id}" \
     --arg actor "$(id -un)" \
-    --arg local_revision "$(git rev-parse HEAD)" \
+    --arg local_revision "${local_revision}" \
     --arg flux_revision "${flux_revision}" \
     --arg cluster_context "${cluster_context}" \
     --arg environment_id "${environment_id}" \
@@ -300,6 +301,10 @@ flux_revision="$(
     get kustomization reefops-external-secrets-openbao \
     -o jsonpath='{.status.lastAppliedRevision}'
 )"
+if [[ "${flux_revision}" != "sha1:${local_revision}" ]]; then
+  error_code="platform-revision-mismatch"
+  exit 1
+fi
 kubectl --context "${cluster_context}" -n "${namespace}" \
   rollout status deployment/external-secrets --timeout=120s >/dev/null
 wait_for_condition secretstore "${store}" True

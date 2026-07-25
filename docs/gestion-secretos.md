@@ -154,6 +154,9 @@ El orden operativo limpio es:
 La prueba usa el token raíz original solo durante la ceremonia interactiva; no
 genera nuevas claves ni lo conserva. Su evidencia queda en
 `~/.local/state/reefops/eso-openbao/operations.jsonl`.
+La revisión local debe coincidir exactamente con
+`reefops-external-secrets-openbao.status.lastAppliedRevision`; una diferencia
+falla antes de capturar o mutar la política.
 
 La verificación crea su propio port-forward al Service activo, fija SNI y CA,
 exige el contexto `docker-desktop`, comprueba la etiqueta
