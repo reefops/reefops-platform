@@ -33,6 +33,17 @@ if ! yq eval -e '
   echo "La StorageClass stateful no conserva los PV al borrar claims." >&2
   exit 1
 fi
+if ! yq eval -e '
+  select(.kind == "StorageClass" and
+    .metadata.name == "reefops-hostpath-delete") |
+  .provisioner == "docker.io/hostpath" and
+  .reclaimPolicy == "Delete" and
+  .allowVolumeExpansion == false and
+  .metadata.labels."reefops.io/lifecycle" == "ephemeral"
+  ' "${temp_dir}/infrastructure.yaml" >/dev/null; then
+  echo "La StorageClass efímera no elimina los PV al cerrar un simulacro." >&2
+  exit 1
+fi
 
 openbao_policy="$(
   kubectl kustomize "${project_root}/platform/openbao" |

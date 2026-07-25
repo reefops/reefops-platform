@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: reefops-hostpath-delete
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+    reefops.io/lifecycle: ephemeral
+provisioner: docker.io/hostpath
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: false
