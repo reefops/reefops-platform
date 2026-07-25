@@ -24,10 +24,14 @@ recursos `ServiceMonitor` antes de que sus CRD estén preparadas.
 | volume | 1 | 20 GiB |
 | S3 | 1 | sin PVC propio |
 
-Todos los PVC usan `hostpath`, RWO y `Retain` en el HelmRelease. La capacidad
-inicial preserva margen en el disco del Mac mini y no constituye un límite
-funcional definitivo. Docker Desktop no permite expansión de esa StorageClass;
-un aumento requiere exportación, recreación controlada y restauración.
+Todos los PVC usan `reefops-hostpath-retain`, una StorageClass IaC dedicada
+sobre el provisioner de Docker Desktop, RWO y `reclaimPolicy: Retain`. La
+anotación Helm evita que un uninstall normal pode el PVC y la política efectiva
+del PV evita que borrar accidentalmente el claim destruya el volumen. Ninguna
+de las dos protege frente a un reset de Docker Desktop. La capacidad inicial
+preserva margen en el disco del Mac mini y no constituye un límite funcional
+definitivo. El provisioner no permite expansión; un aumento requiere
+exportación, recreación controlada y restauración.
 
 Se usa colocación `000`: ninguna réplica adicional en el mismo host se presenta
 como HA. Los servicios son `ClusterIP` y no se crea Ingress, `NodePort`,
@@ -53,7 +57,7 @@ Su índice declara:
 
 `mirror-seaweedfs-chart.sh` descarga a un directorio temporal, verifica el
 digest upstream y publica el paquete sin modificar en
-`ghcr.io/reefops/charts/seaweedfs`. La raíz Flux consume ese artefacto OCI por
+`ghcr.io/reefops/seaweedfs`. La raíz Flux consume ese artefacto OCI por
 digest, no el índice HTTP ni un tag flotante. La promoción registra ambos
 digests para conservar procedencia.
 
@@ -114,16 +118,21 @@ credenciales ni payload privado.
 
 ## Backup y restore
 
-`task seaweedfs-backup` exporta únicamente una allowlist explícita de buckets,
-genera inventario y checksums, cifra el artefacto con `age` antes de copiarlo al
-QNAP y elimina el staging en claro. `task seaweedfs-verify-backup` valida
-estructura, manifest y cadena sin restaurar datos activos.
+`task seaweedfs-recovery-verify` crea únicamente un objeto sintético, exporta
+contenido, metadata, tags e inventario, cifra artefacto y manifiesto con `age`
+antes de escribirlos en el QNAP, elimina la fuente, restaura en otro bucket y
+compara checksums y metadata. Nunca sobrescribe un bucket existente y destruye
+ambos buckets de ensayo al finalizar.
 
-`task seaweedfs-restore-verify` exige un bucket de destino aislado y el digest
-esperado, restaura, compara contenido y metadata y destruye el bucket de
-ensayo. Nunca sobrescribe un bucket existente ni modifica el desired state.
+Este ensayo demuestra portabilidad lógica de objetos dentro del proveedor
+activo; no demuestra disaster recovery tras perder los PV o la VM de Docker
+Desktop. Esa garantía seguirá abierta hasta restaurar el artefacto en una
+instancia SeaweedFS vacía e independiente. Por tanto, su éxito es gate del
+contrato de backup lógico, no de recuperabilidad completa del host.
 
-El gate inicial usa sólo datos sintéticos. Su éxito demuestra el mecanismo,
-pero no convierte un único Mac en HA ni garantiza todavía el RPO de datos
-reales. Cuando exista PostgreSQL, ambos runbooks incorporarán un identificador
-de consistencia coordinado.
+El gate inicial demuestra así el mecanismo sin dar acceso a datos reales. Las
+tareas genéricas de backup exigirán una allowlist explícita de buckets y se
+activarán cuando exista el primer bucket funcional. Este ensayo no convierte
+un único Mac en HA ni garantiza todavía el RPO de datos reales. Cuando exista
+PostgreSQL, ambos runbooks incorporarán un identificador de consistencia
+coordinado.

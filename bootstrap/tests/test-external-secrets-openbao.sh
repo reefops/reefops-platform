@@ -135,7 +135,13 @@ if ! yq eval -e '
     "reefops.io/environment"] == "development" and
   .spec.ingress[0].from[1].podSelector.matchLabels[
     "app.kubernetes.io/name"] == "external-secrets" and
-  (.spec.ingress[0].from | length) == 2
+  .spec.ingress[0].from[2].namespaceSelector.matchLabels[
+    "kubernetes.io/metadata.name"] == "reefops-data" and
+  .spec.ingress[0].from[2].namespaceSelector.matchLabels[
+    "reefops.io/environment"] == "development" and
+  .spec.ingress[0].from[2].podSelector.matchLabels[
+    "app.kubernetes.io/instance"] == "external-secrets-seaweedfs" and
+  (.spec.ingress[0].from | length) == 3
   ' "${temp_dir}/openbao.yaml" >/dev/null; then
   echo "OpenBao no limita ESO por capacidad y entorno del namespace." >&2
   exit 1
@@ -145,6 +151,7 @@ if grep -RIE \
   'skip.?verify|tokenSecretRef|capabilities[[:space:]]*=[[:space:]]*[[][^]]*(list|create|update|delete|sudo)' \
   "${project_root}/platform/external-secrets" \
   "${project_root}/platform/external-secrets-openbao" \
+  "${project_root}/platform/seaweedfs-secret" \
   "${project_root}/bootstrap/openbao/policies/external-secrets.hcl"; then
   echo "La integración ESO contiene una ampliación de privilegios prohibida." >&2
   exit 1

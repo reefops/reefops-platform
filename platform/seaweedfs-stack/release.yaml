@@ -1,0 +1,197 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: reefops-seaweedfs
+  namespace: reefops-data
+spec:
+  interval: 30m
+  timeout: 15m
+  releaseName: reefops-seaweedfs
+  chartRef:
+    kind: OCIRepository
+    name: seaweedfs
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    global:
+      seaweedfs:
+        createClusterRole: false
+        automountServiceAccountToken: false
+        enableReplication: false
+        replicationPlacement: "000"
+        imagePullPolicy: IfNotPresent
+
+    master:
+      replicas: 1
+      imageOverride: docker.io/chrislusf/seaweedfs@sha256:c7d6c721b30ae711db766bbbfd40192776e263d4e51e22f57baef7bef93c12c6
+      defaultReplication: "000"
+      resumeState: true
+      affinity: ""
+      data:
+        type: persistentVolumeClaim
+        size: 1Gi
+        storageClass: reefops-hostpath-retain
+        annotations:
+          helm.sh/resource-policy: keep
+      logs:
+        type: emptyDir
+      podLabels:
+        app.kubernetes.io/part-of: reefops
+        reefops.io/environment: development
+      podSecurityContext:
+        enabled: true
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containerSecurityContext:
+        enabled: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+      resources:
+        requests:
+          cpu: 50m
+          memory: 96Mi
+        limits:
+          cpu: 500m
+          memory: 384Mi
+
+    volume:
+      replicas: 1
+      imageOverride: docker.io/chrislusf/seaweedfs@sha256:c7d6c721b30ae711db766bbbfd40192776e263d4e51e22f57baef7bef93c12c6
+      affinity: ""
+      resizeHook:
+        enabled: false
+      dataDirs:
+        - name: data
+          type: persistentVolumeClaim
+          size: 20Gi
+          storageClass: reefops-hostpath-retain
+          maxVolumes: 0
+          annotations:
+            helm.sh/resource-policy: keep
+      logs:
+        type: emptyDir
+      podLabels:
+        app.kubernetes.io/part-of: reefops
+        reefops.io/environment: development
+      podSecurityContext:
+        enabled: true
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containerSecurityContext:
+        enabled: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: "1"
+          memory: 768Mi
+
+    filer:
+      replicas: 1
+      imageOverride: docker.io/chrislusf/seaweedfs@sha256:c7d6c721b30ae711db766bbbfd40192776e263d4e51e22f57baef7bef93c12c6
+      defaultReplicaPlacement: "000"
+      affinity: ""
+      data:
+        type: persistentVolumeClaim
+        size: 2Gi
+        storageClass: reefops-hostpath-retain
+        annotations:
+          helm.sh/resource-policy: keep
+      logs:
+        type: emptyDir
+      s3:
+        enabled: false
+      podLabels:
+        app.kubernetes.io/part-of: reefops
+        reefops.io/environment: development
+      podSecurityContext:
+        enabled: true
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containerSecurityContext:
+        enabled: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+    s3:
+      enabled: true
+      replicas: 1
+      imageOverride: docker.io/chrislusf/seaweedfs@sha256:c7d6c721b30ae711db766bbbfd40192776e263d4e51e22f57baef7bef93c12c6
+      enableAuth: true
+      existingConfigSecret: seaweedfs-s3-config
+      affinity: ""
+      logs:
+        type: emptyDir
+      podLabels:
+        app.kubernetes.io/part-of: reefops
+        reefops.io/environment: development
+      podSecurityContext:
+        enabled: true
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containerSecurityContext:
+        enabled: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+      resources:
+        requests:
+          cpu: 50m
+          memory: 96Mi
+        limits:
+          cpu: 500m
+          memory: 384Mi
+
+    admin:
+      enabled: false
+    worker:
+      enabled: false
+    sftp:
+      enabled: false
+    cosi:
+      enabled: false
+    allInOne:
+      enabled: false

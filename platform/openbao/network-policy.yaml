@@ -22,6 +22,14 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: external-secrets
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: reefops-data
+              reefops.io/environment: development
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: external-secrets
+              app.kubernetes.io/instance: external-secrets-seaweedfs
       ports:
         - protocol: TCP
           port: 8200

@@ -107,6 +107,45 @@ data:
     }
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-seaweedfs
+  namespace: reefops-observability
+data:
+  seaweedfs.json: |
+    {
+      "annotations": {"list": []},
+      "editable": false,
+      "panels": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "id": 1,
+          "targets": [{"expr": "sum(up{namespace=\"reefops-data\",service=~\"reefops-seaweedfs-.*\"})", "refId": "A"}],
+          "title": "SeaweedFS targets available",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "id": 2,
+          "targets": [{"expr": "sum(kubelet_volume_stats_used_bytes{namespace=\"reefops-data\",persistentvolumeclaim=~\".*reefops-seaweedfs.*\"})", "refId": "A"}],
+          "title": "SeaweedFS persistent storage used",
+          "type": "stat"
+        }
+      ],
+      "schemaVersion": 42,
+      "tags": ["reefops", "seaweedfs", "storage"],
+      "templating": {"list": []},
+      "time": {"from": "now-1h", "to": "now"},
+      "title": "ReefOps SeaweedFS",
+      "uid": "reefops-seaweedfs",
+      "version": 1
+    }
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: grafana
@@ -213,8 +252,12 @@ spec:
           configMap:
             name: grafana-dashboard-provider
         - name: dashboard
-          configMap:
-            name: grafana-dashboard-platform
+          projected:
+            sources:
+              - configMap:
+                  name: grafana-dashboard-platform
+              - configMap:
+                  name: grafana-dashboard-seaweedfs
         - name: tmp
           emptyDir:
             sizeLimit: 64Mi

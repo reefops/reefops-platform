@@ -1,0 +1,11 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: reefops-hostpath-retain
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+provisioner: docker.io/hostpath
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+allowVolumeExpansion: false

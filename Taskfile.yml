@@ -16,6 +16,9 @@ tasks:
       - kubectl kustomize platform/observability-config >/dev/null
       - kubectl kustomize platform/envoy-gateway-stack >/dev/null
       - kubectl kustomize platform/envoy-gateway-config >/dev/null
+      - kubectl kustomize platform/seaweedfs-secret >/dev/null
+      - kubectl kustomize platform/seaweedfs-stack >/dev/null
+      - kubectl kustomize platform/seaweedfs-config >/dev/null
       - kubectl kustomize recovery/openbao >/dev/null
       - kubectl kustomize infrastructure/base | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize environments/development | kubeconform -strict -ignore-missing-schemas -summary
@@ -24,9 +27,12 @@ tasks:
       - kubectl kustomize platform/observability-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/envoy-gateway-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/envoy-gateway-config | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/seaweedfs-secret | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/seaweedfs-stack | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/seaweedfs-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize recovery/openbao | kubeconform -strict -ignore-missing-schemas -summary
-      - bash -n bootstrap/scripts/*.sh bootstrap/tests/*.sh
-      - shellcheck bootstrap/scripts/*.sh
+      - bash -n bootstrap/scripts/*.sh bootstrap/scripts/lib/*.sh bootstrap/tests/*.sh
+      - shellcheck bootstrap/scripts/*.sh bootstrap/scripts/lib/*.sh
       - shellcheck bootstrap/tests/*.sh
       - ./bootstrap/tests/test-environment-foundation.sh
       - ./bootstrap/tests/test-external-secrets-openbao.sh
@@ -37,6 +43,8 @@ tasks:
       - ./bootstrap/tests/test-envoy-gateway-artifacts.sh
       - ./bootstrap/tests/test-envoy-gateway-config.sh
       - ./bootstrap/tests/test-envoy-gateway-evidence-backup.sh
+      - ./bootstrap/tests/test-seaweedfs-artifacts.sh
+      - ./bootstrap/tests/test-seaweedfs-config.sh
       - ./bootstrap/tests/test-openbao-recovery-close.sh
       - ./bootstrap/tests/test-openbao-recovery-target-allowlist.sh
       - gitleaks git --no-banner --redact --exit-code 1 .
@@ -55,6 +63,21 @@ tasks:
     desc: Verifica autenticación, refresco y fallo cerrado de ESO con OpenBao
     cmds:
       - ./bootstrap/scripts/verify-external-secrets-openbao.sh
+
+  seaweedfs-credentials-bootstrap:
+    desc: Crea una sola vez la identidad S3 y la custodia en OpenBao
+    cmds:
+      - ./bootstrap/scripts/run-bootstrap-seaweedfs-credentials.sh
+
+  seaweedfs-verify:
+    desc: Verifica contrato S3, aislamiento y persistencia tras reinicios
+    cmds:
+      - ./bootstrap/scripts/verify-seaweedfs.sh
+
+  seaweedfs-recovery-verify:
+    desc: Cifra un backup sintético externo y prueba restore aislado
+    cmds:
+      - ./bootstrap/scripts/verify-seaweedfs-recovery.sh
 
   observability-verify:
     desc: Verifica alertas, persistencia y evidencia de observabilidad
