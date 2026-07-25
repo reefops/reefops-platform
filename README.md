@@ -22,6 +22,7 @@ ceremony and must pass refresh, revocation, audit and restoration checks. The
 procedure is described in `docs/gestion-secretos.md` and is executed through
 the `openbao-*` tasks.
 
-The next platform gate is the internal development observability stack.
-Its phased scope, isolation and capacity are described in
-`docs/observabilidad.md`.
+The internal development observability stack is operational and has passed its
+alerting, persistence, restart and encrypted-evidence acceptance. Its phased
+scope, isolation and capacity are described in `docs/observabilidad.md`. The
+next stateful platform gate is SeaweedFS.
