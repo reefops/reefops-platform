@@ -15,6 +15,13 @@ spec:
             matchLabels:
               reefops.io/openbao-access: "true"
               reefops.io/environment: development
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: reefops-secret-delivery
+              reefops.io/environment: development
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: external-secrets
       ports:
         - protocol: TCP
           port: 8200

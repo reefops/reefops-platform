@@ -4,3 +4,5 @@ resources:
   - cert-manager
   - openbao-pki
   - openbao
+  - external-secrets
+  - external-secrets-openbao
