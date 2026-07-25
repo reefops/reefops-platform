@@ -151,6 +151,10 @@ for contract in \
     exit 1
   fi
 done
+if grep -F 'kubectl -n flux-system wait' "${verifier}" >/dev/null; then
+  echo "El verificador busca el HelmRelease en el namespace incorrecto." >&2
+  exit 1
+fi
 
 policy_count="$(
   yq eval '

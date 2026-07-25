@@ -26,6 +26,10 @@ forman parte del agregado `platform`. GitOps reconcilia primero el stack
 esas API. Aplicar directamente `platform` no instala observabilidad ni elimina
 esa barrera.
 
+La Kustomization de Flux reside en `flux-system`, mientras que el HelmRelease y
+sus workloads residen en `reefops-observability`; las comprobaciones operativas
+deben respetar esa separación de namespaces.
+
 Los Services adaptadores creados dentro de `flux-system`, `cert-manager` y
 `reefops-secret-delivery` pertenecen a la integración de observabilidad, llevan
 la etiqueta `reefops.io/metrics` y no sustituyen recursos propiedad de los

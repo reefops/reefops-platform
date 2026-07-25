@@ -406,7 +406,7 @@ if [[ "${oci_revision}" != *"${chart_digest}"* ]]; then
 fi
 
 phase="readiness"
-kubectl -n flux-system wait \
+kubectl -n "${namespace}" wait \
   --for=condition=Ready helmrelease/reefops-monitoring --timeout=10m
 kubectl -n "${namespace}" rollout status deployment/grafana --timeout=5m
 kubectl -n "${namespace}" rollout status \
