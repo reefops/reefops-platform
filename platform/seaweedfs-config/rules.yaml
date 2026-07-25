@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: reefops-seaweedfs
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  groups:
+    - name: reefops.seaweedfs
+      rules:
+        - alert: ReefOpsSeaweedFSComponentUnavailable
+          expr: up{namespace="reefops-data",service=~"reefops-seaweedfs-(master|volume|filer-client|s3)"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: A SeaweedFS component is unavailable
+            description: 'Metrics target {{ $labels.service }} has been unavailable for two minutes.'
+        - alert: ReefOpsSeaweedFSPVCNearlyFull
+          expr: kubelet_volume_stats_available_bytes{namespace="reefops-data",persistentvolumeclaim=~".*reefops-seaweedfs.*"} / kubelet_volume_stats_capacity_bytes{namespace="reefops-data",persistentvolumeclaim=~".*reefops-seaweedfs.*"} < 0.15
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: A SeaweedFS PVC has less than 15 percent free
+            description: 'PVC {{ $labels.persistentvolumeclaim }} is approaching its fixed development capacity.'

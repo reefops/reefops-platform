@@ -6,6 +6,7 @@ temp_dir="$(mktemp -d)"
 trap 'rm -rf "${temp_dir}"' EXIT
 
 kubectl kustomize "${project_root}/environments/development" >"${temp_dir}/development.yaml"
+kubectl kustomize "${project_root}/infrastructure/base" >"${temp_dir}/infrastructure.yaml"
 
 config_count="$(
   yq eval \
@@ -19,6 +20,17 @@ config_count="$(
 )"
 if [[ "${config_count}" -ne 10 ]]; then
   echo "Development no tiene identidad local en sus diez namespaces." >&2
+  exit 1
+fi
+
+if ! yq eval -e '
+  select(.kind == "StorageClass" and
+    .metadata.name == "reefops-hostpath-retain") |
+  .provisioner == "docker.io/hostpath" and
+  .reclaimPolicy == "Retain" and
+  .allowVolumeExpansion == false
+  ' "${temp_dir}/infrastructure.yaml" >/dev/null; then
+  echo "La StorageClass stateful no conserva los PV al borrar claims." >&2
   exit 1
 fi
 

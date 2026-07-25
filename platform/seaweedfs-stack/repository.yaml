@@ -1,0 +1,13 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: seaweedfs
+  namespace: flux-system
+spec:
+  interval: 24h
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    digest: sha256:e06855fbad1c4f74e7f1d25af477668e6be247ab213b940ac6229533a8b87a4b
+  url: oci://ghcr.io/reefops/seaweedfs

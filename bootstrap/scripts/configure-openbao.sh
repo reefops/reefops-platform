@@ -63,6 +63,10 @@ if ! bao secrets list -format=json | jq -e 'has("ci/")' >/dev/null; then
   bao secrets enable -path=ci kv-v2
 fi
 
+if ! bao secrets list -format=json | jq -e 'has("platform/")' >/dev/null; then
+  bao secrets enable -path=platform kv-v2
+fi
+
 if ! bao auth list -format=json | jq -e 'has("kubernetes/")' >/dev/null; then
   bao auth enable kubernetes
 fi
@@ -74,6 +78,8 @@ bao policy write reefops-backup "${policy_dir}/backup.hcl" >/dev/null
 bao policy write reefops-smoke-test "${policy_dir}/smoke-test.hcl" >/dev/null
 bao policy write reefops-external-secrets \
   "${policy_dir}/external-secrets.hcl" >/dev/null
+bao policy write reefops-seaweedfs-external-secrets \
+  "${policy_dir}/seaweedfs-external-secrets.hcl" >/dev/null
 
 bao write auth/kubernetes/role/reefops-backup \
   bound_service_account_names=openbao-backup \
@@ -96,8 +102,15 @@ bao write auth/kubernetes/role/reefops-external-secrets \
   token_ttl=5m \
   token_max_ttl=10m >/dev/null
 
+bao write auth/kubernetes/role/reefops-seaweedfs-external-secrets \
+  bound_service_account_names=external-secrets-seaweedfs-openbao \
+  bound_service_account_namespaces=reefops-data \
+  policies=reefops-seaweedfs-external-secrets \
+  token_ttl=5m \
+  token_max_ttl=10m >/dev/null
+
 bao kv put ci/healthcheck status=ready >/dev/null
 bao kv put ci/eso-smoke-test status=ready >/dev/null
 
 result="success"
-echo "OpenBao configurado con auditoría, KV CI, políticas, Kubernetes y ESO."
+echo "OpenBao configurado con auditoría, KV CI/plataforma, políticas, Kubernetes y ESO."
