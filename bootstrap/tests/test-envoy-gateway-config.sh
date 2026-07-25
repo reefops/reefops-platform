@@ -67,6 +67,7 @@ fi
 
 verifier="${project_root}/bootstrap/scripts/verify-envoy-gateway.sh"
 for contract in \
+  'reefops-development-environment' \
   'reefops-envoy-gateway-stack' \
   'reefops-envoy-gateway-config' \
   'gatewayclasses.gateway.networking.k8s.io' \
