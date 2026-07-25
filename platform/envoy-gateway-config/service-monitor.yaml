@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: envoy-gateway
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  namespaceSelector:
+    matchNames:
+      - reefops-gateway-system
+  selector:
+    matchLabels:
+      control-plane: envoy-gateway
+      app.kubernetes.io/instance: reefops-envoy-gateway
+  endpoints:
+    - port: metrics
+      interval: 30s
