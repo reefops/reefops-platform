@@ -128,6 +128,40 @@ aceptación local solo demuestra backup/PITR. El gate de producción permanecer�
 cerrado hasta que una exportación cifrada se rehidrate en almacenamiento S3
 vacío y se restaure un Cluster aislado desde esa copia.
 
+### Simulacro PITR aislado
+
+`platform/postgresql-recovery-drill` es una raíz temporal, no parte del
+operando. Crea un `ObjectStore` de lectura sobre el servidor Barman
+`reefops-postgresql` y un Cluster distinto,
+`reefops-postgresql-recovery-drill`. Su `bootstrap.recovery` usa el plugin
+CNPG-I y recibe mediante sustitución Flux el nombre de un restore point
+sintético creado expresamente para la operación.
+
+La promoción exige este orden:
+
+1. insertar un marcador sintético en el origen, crear un restore point con
+   nombre único y forzar el cambio de WAL;
+2. esperar a que Barman archive ese WAL;
+3. versionar en GitOps únicamente el nombre público del restore point y
+   reconciliar la raíz temporal;
+4. comprobar que el Cluster restaurado está listo, contiene exactamente el
+   marcador esperado y alcanzó el restore point;
+5. registrar revisiones GitOps/plataforma, backup, WAL, LSN, timeline,
+   identidades Kubernetes, PVC, correlación y resultado;
+6. retirar la reconciliación mediante otra PR y exigir que Cluster, pods, PVC y
+   PV efímeros desaparezcan.
+
+El destino usa `reefops-hostpath-delete`, una StorageClass exclusiva para
+recursos desechables. Nunca usa `reefops-hostpath-retain`, no habilita archivado
+WAL propio, no comparte Service ni nombre con el origen y queda bajo default
+deny con salida limitada a DNS, API Kubernetes, plugin Barman y SeaweedFS S3.
+La prueba falla cerrada si detecta exposición norte-sur, un PVC retenido,
+credenciales distintas de ESO o un restore in-place.
+
+El simulacro demuestra restauración física y PITR dentro del mismo backend S3.
+No demuestra recuperación ante pérdida simultánea del Mac y SeaweedFS; ese gate
+continúa requiriendo la copia externa cifrada.
+
 ## Límites conocidos
 
 - `10.96.0.1/32` es la dirección del API server del clúster development actual;

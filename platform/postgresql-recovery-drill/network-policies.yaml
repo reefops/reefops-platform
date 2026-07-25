@@ -1,0 +1,120 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-recovery-drill-default-deny
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: reefops-postgresql-recovery-drill
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-recovery-drill-dns-egress
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: reefops-postgresql-recovery-drill
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-recovery-drill-api-egress
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: reefops-postgresql-recovery-drill
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.96.0.1/32
+      ports:
+        - protocol: TCP
+          port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-recovery-drill-plugin-egress
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: reefops-postgresql-recovery-drill
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: reefops-database-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: plugin-barman-cloud
+      ports:
+        - protocol: TCP
+          port: 9090
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-recovery-drill-operator-ingress
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: reefops-postgresql-recovery-drill
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: reefops-database-system
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-recovery-drill-s3-egress
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: reefops-postgresql-recovery-drill
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: s3
+              app.kubernetes.io/instance: reefops-seaweedfs
+      ports:
+        - protocol: TCP
+          port: 8333
