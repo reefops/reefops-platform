@@ -9,6 +9,9 @@ correlation_id="${REEFOPS_CORRELATION_ID:-${operation_id}}"
 causation_id="${REEFOPS_CAUSATION_ID:-${operation_id}}"
 started_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 result="failure"
+cluster_context="${REEFOPS_KUBE_CONTEXT:?Falta contexto validado}"
+environment_id="${REEFOPS_ENVIRONMENT_ID:?Falta entorno validado}"
+cluster_id="${REEFOPS_OPENBAO_CLUSTER_ID:?Falta cluster_id validado}"
 
 install -d -m 0700 "${audit_dir}"
 touch "${audit_dir}/operations.jsonl"
@@ -23,6 +26,10 @@ finish() {
     --arg started_at "${started_at}" \
     --arg finished_at "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
     --arg result "${result}" \
+    --arg revision "$(git rev-parse HEAD)" \
+    --arg cluster_context "${cluster_context}" \
+    --arg environment_id "${environment_id}" \
+    --arg cluster_id "${cluster_id}" \
     --arg correlation_id "${correlation_id}" \
     --arg causation_id "${causation_id}" \
     '{
@@ -30,6 +37,10 @@ finish() {
       actor: $actor,
       authentication: "openbao-bootstrap-token",
       authorization: "openbao-root-bootstrap",
+      revision: $revision,
+      cluster_context: $cluster_context,
+      environment_id: $environment_id,
+      cluster_id: $cluster_id,
       started_at: $started_at,
       finished_at: $finished_at,
       result: $result,
