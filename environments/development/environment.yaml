@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reefops-environment
+  namespace: reefops-system
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+data:
+  environment_id: development
+  trust_boundary: local-development
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reefops-environment
+  namespace: reefops-domains
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+data:
+  environment_id: development
+  trust_boundary: local-development
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reefops-environment
+  namespace: reefops-intelligence
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+data:
+  environment_id: development
+  trust_boundary: local-development
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reefops-environment
+  namespace: reefops-data
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+data:
+  environment_id: development
+  trust_boundary: local-development
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reefops-environment
+  namespace: reefops-identity
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+data:
+  environment_id: development
+  trust_boundary: local-development
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reefops-environment
+  namespace: reefops-observability
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+data:
+  environment_id: development
+  trust_boundary: local-development
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reefops-environment
+  namespace: reefops-secrets
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+data:
+  environment_id: development
+  trust_boundary: local-development
