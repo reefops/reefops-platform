@@ -1,0 +1,60 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: reefops-platform
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  groups:
+    - name: reefops.platform
+      rules:
+        - alert: ReefOpsFluxReconciliationFailure
+          expr: max(gotk_reconcile_condition{status="False",type="Ready"}) by (exported_namespace, name, kind) == 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Flux reconciliation is failing
+            description: '{{ $labels.kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} has not reconciled successfully for ten minutes.'
+        - alert: ReefOpsCertificateExpiringSoon
+          expr: certmanager_certificate_expiration_timestamp_seconds - time() < 604800
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: A managed certificate expires within seven days
+            description: 'Certificate {{ $labels.namespace }}/{{ $labels.name }} is close to expiry.'
+        - alert: ReefOpsOpenBaoUnavailable
+          expr: (kube_statefulset_status_replicas_ready{namespace="reefops-secrets",statefulset="openbao"} < 1) or absent(kube_statefulset_status_replicas_ready{namespace="reefops-secrets",statefulset="openbao"})
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: OpenBao is unavailable
+            description: The development OpenBao StatefulSet has no ready replica.
+        - alert: ReefOpsExternalSecretsUnavailable
+          expr: (kube_deployment_status_replicas_available{namespace="reefops-secret-delivery",deployment="external-secrets"} < 1) or absent(kube_deployment_status_replicas_available{namespace="reefops-secret-delivery",deployment="external-secrets"})
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: External Secrets Operator is unavailable
+            description: The namespaced External Secrets controller has no available replica.
+        - alert: ReefOpsExternalSecretNotReady
+          expr: externalsecret_status_condition{condition="Ready",status!="True"} == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: An ExternalSecret is not ready
+            description: 'ExternalSecret {{ $labels.namespace }}/{{ $labels.name }} has not been ready for five minutes.'
+        - alert: ReefOpsSecretStoreNotReady
+          expr: secretstore_status_condition{condition="Ready",status!="True"} == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: A SecretStore is not ready
+            description: 'SecretStore {{ $labels.namespace }}/{{ $labels.name }} has not been ready for five minutes.'

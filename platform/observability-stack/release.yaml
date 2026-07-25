@@ -1,0 +1,270 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: reefops-monitoring
+  namespace: reefops-observability
+spec:
+  interval: 30m
+  timeout: 20m
+  releaseName: reefops-monitoring
+  chartRef:
+    kind: OCIRepository
+    name: kube-prometheus-stack
+    namespace: flux-system
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              group: rbac.authorization.k8s.io
+              version: v1
+              kind: ClusterRole
+              name: reefops-monitoring-operator
+            patch: |
+              apiVersion: rbac.authorization.k8s.io/v1
+              kind: ClusterRole
+              metadata:
+                name: reefops-monitoring-operator
+              $patch: delete
+          - target:
+              group: rbac.authorization.k8s.io
+              version: v1
+              kind: ClusterRoleBinding
+              name: reefops-monitoring-operator
+            patch: |
+              apiVersion: rbac.authorization.k8s.io/v1
+              kind: ClusterRoleBinding
+              metadata:
+                name: reefops-monitoring-operator
+              $patch: delete
+  values:
+    fullnameOverride: reefops-monitoring
+    commonLabels:
+      app.kubernetes.io/part-of: reefops
+      reefops.io/environment: development
+      reefops.io/monitoring-instance: platform
+
+    defaultRules:
+      create: true
+      rules:
+        etcd: false
+        kubeControllerManager: false
+        kubeProxy: false
+        kubeSchedulerAlerting: false
+        kubeSchedulerRecording: false
+
+    kubeControllerManager:
+      enabled: false
+    kubeEtcd:
+      enabled: false
+    kubeProxy:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubelet:
+      enabled: false
+
+    alertmanager:
+      enabled: true
+      service:
+        type: ClusterIP
+      alertmanagerSpec:
+        replicas: 1
+        retention: 120h
+        image:
+          registry: quay.io
+          repository: prometheus/alertmanager
+          tag: v0.32.1
+          sha: 51a825c2a40acc3e338fdd00d622e01ec090f72be2b3ea46be0839cd47a4d286
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        storage:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              storageClassName: hostpath
+              resources:
+                requests:
+                  storage: 1Gi
+
+    grafana:
+      enabled: false
+
+    kube-state-metrics:
+      collectors:
+        - certificatesigningrequests
+        - configmaps
+        - cronjobs
+        - daemonsets
+        - deployments
+        - endpointslices
+        - horizontalpodautoscalers
+        - ingresses
+        - jobs
+        - leases
+        - limitranges
+        - mutatingwebhookconfigurations
+        - namespaces
+        - networkpolicies
+        - nodes
+        - persistentvolumeclaims
+        - persistentvolumes
+        - poddisruptionbudgets
+        - pods
+        - replicasets
+        - replicationcontrollers
+        - resourcequotas
+        - services
+        - statefulsets
+        - storageclasses
+        - validatingwebhookconfigurations
+        - volumeattachments
+      image:
+        registry: registry.k8s.io
+        repository: kube-state-metrics/kube-state-metrics
+        tag: v2.19.0
+        sha: sha256:6b2f0b6f2f86ac5b1aa883a033a8dd55bb96c16d191ec973393bdaadaddac914
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+
+    prometheus-node-exporter:
+      namespaceOverride: reefops-node-observability
+      hostNetwork: false
+      hostPID: false
+      image:
+        registry: quay.io
+        repository: prometheus/node-exporter
+        tag: v1.11.1
+        distroless: true
+        digest: sha256:6112664fd761bb964d8a2d3d0119d6c8402618a89edbb3a43c8f7b4090fb53c9
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        seccompProfile:
+          type: RuntimeDefault
+      resources:
+        requests:
+          cpu: 20m
+          memory: 32Mi
+        limits:
+          cpu: 250m
+          memory: 128Mi
+
+    prometheusOperator:
+      kubeletEndpointsEnabled: false
+      kubeletEndpointSliceEnabled: false
+      kubeletService:
+        enabled: false
+      namespaces:
+        releaseNamespace: true
+      admissionWebhooks:
+        enabled: false
+        patch:
+          enabled: false
+      image:
+        registry: quay.io
+        repository: prometheus-operator/prometheus-operator
+        tag: v0.91.0
+        sha: 9e53e13139218aca79ee000172de73355e9174ef2904585bfad9497fc71aae2d
+      prometheusConfigReloader:
+        image:
+          registry: quay.io
+          repository: prometheus-operator/prometheus-config-reloader
+          tag: v0.91.0
+          sha: 7d9e4eea5f1139e602508871f422b0116c60e87c662f3dcd234d5ab60cd0d8c1
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+      thanosImage:
+        registry: quay.io
+        repository: thanos/thanos
+        tag: v0.41.0
+        sha: cf3e9b292e4302ad4a4955b56379703aea39516607d382a57604a3d003c35d10
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+    prometheus:
+      enabled: true
+      service:
+        type: ClusterIP
+      prometheusSpec:
+        replicas: 1
+        retention: 7d
+        retentionSize: 8GB
+        image:
+          registry: quay.io
+          repository: prometheus/prometheus
+          tag: v3.11.3-distroless
+          sha: cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d
+        enableAdminAPI: false
+        externalLabels:
+          cluster: docker-desktop
+          environment: development
+        podMonitorNamespaceSelector: {}
+        podMonitorSelector:
+          matchLabels:
+            release: reefops-monitoring
+        podMonitorSelectorNilUsesHelmValues: false
+        probeNamespaceSelector: {}
+        probeSelector:
+          matchLabels:
+            release: reefops-monitoring
+        probeSelectorNilUsesHelmValues: false
+        ruleNamespaceSelector: {}
+        ruleSelector:
+          matchLabels:
+            release: reefops-monitoring
+        ruleSelectorNilUsesHelmValues: false
+        serviceMonitorNamespaceSelector: {}
+        serviceMonitorSelector:
+          matchLabels:
+            release: reefops-monitoring
+        serviceMonitorSelectorNilUsesHelmValues: false
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 2
+            memory: 2Gi
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              storageClassName: hostpath
+              resources:
+                requests:
+                  storage: 10Gi

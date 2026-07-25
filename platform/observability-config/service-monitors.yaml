@@ -1,0 +1,56 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flux
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      reefops.io/metrics: flux
+  endpoints:
+    - port: http-prom
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cert-manager
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  namespaceSelector:
+    matchNames:
+      - cert-manager
+  selector:
+    matchLabels:
+      reefops.io/metrics: cert-manager
+  endpoints:
+    - port: http-metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: external-secrets
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  namespaceSelector:
+    matchNames:
+      - reefops-secret-delivery
+  selector:
+    matchLabels:
+      reefops.io/metrics: external-secrets
+  endpoints:
+    - port: metrics
+      interval: 30s

@@ -12,10 +12,14 @@ tasks:
       - kubectl kustomize infrastructure/base >/dev/null
       - kubectl kustomize environments/development >/dev/null
       - kubectl kustomize platform >/dev/null
+      - kubectl kustomize platform/observability-stack >/dev/null
+      - kubectl kustomize platform/observability-config >/dev/null
       - kubectl kustomize recovery/openbao >/dev/null
       - kubectl kustomize infrastructure/base | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize environments/development | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/observability-stack | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/observability-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize recovery/openbao | kubeconform -strict -ignore-missing-schemas -summary
       - bash -n bootstrap/scripts/*.sh bootstrap/tests/*.sh
       - shellcheck bootstrap/scripts/*.sh
@@ -23,6 +27,9 @@ tasks:
       - ./bootstrap/tests/test-environment-foundation.sh
       - ./bootstrap/tests/test-external-secrets-openbao.sh
       - ./bootstrap/tests/test-openbao-artifacts.sh
+      - ./bootstrap/tests/test-observability-artifacts.sh
+      - ./bootstrap/tests/test-observability-config.sh
+      - ./bootstrap/tests/test-observability-evidence-backup.sh
       - ./bootstrap/tests/test-openbao-recovery-close.sh
       - ./bootstrap/tests/test-openbao-recovery-target-allowlist.sh
       - gitleaks git --no-banner --redact --exit-code 1 .
@@ -41,6 +48,21 @@ tasks:
     desc: Verifica autenticación, refresco y fallo cerrado de ESO con OpenBao
     cmds:
       - ./bootstrap/scripts/verify-external-secrets-openbao.sh
+
+  observability-verify:
+    desc: Verifica alertas, persistencia y evidencia de observabilidad
+    cmds:
+      - ./bootstrap/scripts/verify-observability.sh
+
+  observability-evidence-backup:
+    desc: Cifra la cadena de evidencia fuera del clúster
+    cmds:
+      - ./bootstrap/scripts/backup-observability-evidence.sh
+
+  observability-evidence-backup-verify:
+    desc: Descifra y verifica la integridad del backup de evidencia
+    cmds:
+      - ./bootstrap/scripts/verify-observability-evidence-backup.sh
 
   openbao-backup:
     desc: Crea un snapshot Raft cifrado fuera del clúster
