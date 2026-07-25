@@ -151,6 +151,17 @@ if grep -RIE \
 fi
 
 verification_script="${project_root}/bootstrap/scripts/verify-external-secrets-openbao.sh"
+configure_script="${project_root}/bootstrap/scripts/run-configure-openbao.sh"
+valid_environment_jsonpath='reefops\.io/environment'
+invalid_environment_jsonpath='reefops\\.io/environment'
+for target_script in "${configure_script}" "${verification_script}"; do
+  if ! grep -F "${valid_environment_jsonpath}" "${target_script}" >/dev/null ||
+    grep -F "${invalid_environment_jsonpath}" "${target_script}" >/dev/null; then
+    echo "El wrapper no usa el JSONPath exacto de la etiqueta de entorno." >&2
+    exit 1
+  fi
+done
+
 policy_field_count="$(
   grep -Fc "jq -er '.policy'" "${verification_script}"
 )"
