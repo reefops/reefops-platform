@@ -60,6 +60,10 @@ digests, hardening, métricas visibles y ausencia global de Gateway, rutas,
 Ingress, Envoy data plane, NodePort y LoadBalancer. Registra el resultado en
 una cadena JSONL local sin secretos.
 
+La aparición del target de Prometheus admite hasta tres minutos para cubrir la
+recarga de configuración y el primer intervalo de scrape en una instalación
+limpia.
+
 La cadena se respalda y verifica con:
 
 ```sh

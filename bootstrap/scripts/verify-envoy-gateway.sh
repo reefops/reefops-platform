@@ -463,7 +463,7 @@ kubectl -n reefops-observability port-forward \
   service/reefops-monitoring-prometheus 19090:9090 >/dev/null 2>&1 &
 prometheus_pid=$!
 metrics_ready="false"
-for _ in {1..60}; do
+for _ in {1..180}; do
   if curl --fail --silent \
     http://127.0.0.1:19090/api/v1/targets?state=active |
     jq -e '.data.activeTargets[] |
