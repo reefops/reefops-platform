@@ -194,7 +194,7 @@ fi
 in_pod_cluster_id="$(
   kubectl --context "${cluster_context}" -n "${target_namespace}" \
     exec "${target_service}-0" -c openbao -- \
-    bao status -format=json |
+    env BAO_TLS_SERVER_NAME="${target_sni}" bao status -format=json |
     jq -er '.cluster_id'
 )"
 if [[ "${in_pod_cluster_id}" != "${target_cluster_id}" ]]; then
