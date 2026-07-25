@@ -65,6 +65,20 @@ snapshot Raft. El certificado CA tiene una vigencia larga y se renueva con la
 misma clave; la clave CA no rotará automáticamente. Su sustitución exige una
 transición explícita de doble confianza.
 
+El chart copia la configuración renderizada a un fichero de trabajo dentro del
+pod. Por ello, una reconciliación GitOps del ConfigMap no basta para activar un
+cambio HCL en el proceso existente. La operación local de recarga compara la
+configuración versionada y la activa en el fichero de trabajo antes de enviar
+`SIGHUP`; registra hashes, actor, autorización, correlación, resultado y
+comprueba la confirmación de recarga emitida por OpenBao y que el proceso
+continúa preparado. La señal se envía en cada intento, aunque los ficheros ya
+coincidan, para que un fallo parcial sea reintentable. No modifica el estado
+deseado ni acepta configuración fuera del ConfigMap reconciliado.
+La evidencia incluye revisión Git local, contexto, UID y `resourceVersion` del
+ConfigMap y UID del pod. Un lock local serializa operadores en este host; la
+comparación del `resourceVersion` evita activar una revisión que cambió durante
+la operación.
+
 Dependencias y orden:
 
 1. namespace, almacenamiento y políticas de red;
@@ -114,14 +128,41 @@ Fallo seguro:
 Recuperación:
 
 - backup cifrado del almacenamiento fuera de la VM;
+- verificación no destructiva de cada snapshot mediante digest, descifrado
+  efímero, estructura y checksums internos del archivo Raft, sin aplicar una
+  restauración;
 - backup de CA y metadatos de certificados conforme al runbook de plataforma;
 - custodia offline de recovery/unseal material;
 - restauración ensayada y documentada;
 - rotación posterior de credenciales potencialmente expuestas;
 - evidencia de actor, autorización, backup, versión y resultado.
 
-El procedimiento ejecutable y sus comprobaciones se definen en
-[Runbook de recuperación de OpenBao](runbooks/openbao-recuperacion.md).
+La verificación elimina el snapshot en claro al terminar y conserva únicamente
+evidencia no sensible. Demuestra legibilidad e integridad del artefacto, pero no
+sustituye al ensayo periódico de restauración aislada.
+Cada snapshot se acompaña de un manifiesto cifrado con `age` que contiene
+digest, versión productora, cluster ID y fecha. Su SHA-256 se custodia en la
+evidencia de backup y se exige independientemente para impedir sustituciones.
+El restore falla de forma segura si el
+manifiesto no corresponde al artefacto o la versión ejecutora no coincide
+exactamente con la productora; ampliar la matriz de compatibilidad exige una
+decisión versionada y ensayada.
+
+La restauración exige un artefacto de aprobación previo, de un solo uso,
+acotado por digest, modo, cluster, actor y caducidad, además de una confirmación
+ligada al digest. Durante el bootstrap local ese artefacto representa la
+aprobación explícita del operador de confianza, no una autorización
+independiente. Antes de permitir restores delegados deberá emitirlo y
+verificarlo el sistema gestionado de autorización. El backup preventivo y la
+verificación posterior conservan la correlación y declaran la operación de
+restore como causa inmediata.
+
+Los JSONL locales son evidencia operativa mutable, no auditoría funcional
+inmutable. Se protegen con permisos mínimos y deberán copiarse al almacén de
+evidencias con retención e integridad cuando ese componente esté desplegado.
+
+El procedimiento ejecutable y sus comprobaciones se definen en el
+[runbook de recuperación del repositorio de producto](https://github.com/reefops/reefops/blob/main/docs/runbooks/openbao-recuperacion.md).
 
 Los StatefulSets conservarán sus PVC al eliminarse o escalarse. OpenBao usará
 usuario no root, seccomp `RuntimeDefault`, privilege escalation deshabilitada,

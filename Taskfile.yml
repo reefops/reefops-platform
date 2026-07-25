@@ -29,6 +29,11 @@ tasks:
     cmds:
       - ./bootstrap/scripts/backup-openbao.sh
 
+  openbao-verify-backup:
+    desc: Verifica un snapshot cifrado sin restaurarlo
+    cmds:
+      - ./bootstrap/scripts/verify-openbao-backup.sh
+
   openbao-ca-backup:
     desc: Cifra y respalda la CA local fuera del clúster
     cmds:
@@ -53,3 +58,8 @@ tasks:
     desc: Recarga el certificado TLS renovado y verifica su serial
     cmds:
       - ./bootstrap/scripts/reload-openbao-tls.sh
+
+  openbao-config-reload:
+    desc: Activa la configuración HCL reconciliada y recarga OpenBao
+    cmds:
+      - ./bootstrap/scripts/reload-openbao-config.sh
