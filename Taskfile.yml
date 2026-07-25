@@ -11,6 +11,7 @@ tasks:
     cmds:
       - kubectl kustomize infrastructure/base >/dev/null
       - kubectl kustomize platform >/dev/null
+      - kubectl kustomize recovery/openbao >/dev/null
       - shellcheck bootstrap/scripts/*.sh
       - gitleaks git --no-banner --redact --exit-code 1 .
 
@@ -63,3 +64,13 @@ tasks:
     desc: Activa la configuración HCL reconciliada y recarga OpenBao
     cmds:
       - ./bootstrap/scripts/reload-openbao-config.sh
+
+  openbao-recovery-preflight:
+    desc: Verifica el aislamiento antes del ensayo de recuperación
+    cmds:
+      - ./bootstrap/scripts/verify-openbao-recovery-isolation.sh
+
+  openbao-recovery-cleanup-verify:
+    desc: Confirma que no quedan recursos del ensayo de recuperación
+    cmds:
+      - ./bootstrap/scripts/verify-openbao-recovery-cleanup.sh

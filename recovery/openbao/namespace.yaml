@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: reefops-openbao-recovery
+  labels:
+    app.kubernetes.io/part-of: reefops
+    reefops.io/recovery-drill: "true"
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

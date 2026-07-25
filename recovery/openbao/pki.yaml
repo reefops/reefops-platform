@@ -1,0 +1,59 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: openbao-recovery-selfsigned
+  namespace: reefops-openbao-recovery
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao-recovery-ca
+  namespace: reefops-openbao-recovery
+spec:
+  isCA: true
+  commonName: ReefOps OpenBao Recovery Drill CA
+  secretName: openbao-recovery-ca
+  duration: 168h
+  renewBefore: 24h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  issuerRef:
+    name: openbao-recovery-selfsigned
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: openbao-recovery-ca
+  namespace: reefops-openbao-recovery
+spec:
+  ca:
+    secretName: openbao-recovery-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao-recovery
+  namespace: reefops-openbao-recovery
+spec:
+  secretName: openbao-recovery-tls
+  duration: 72h
+  renewBefore: 12h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  usages:
+    - server auth
+  dnsNames:
+    - openbao-recovery
+    - openbao-recovery.reefops-openbao-recovery
+    - openbao-recovery.reefops-openbao-recovery.svc
+    - openbao-recovery.reefops-openbao-recovery.svc.cluster.local
+  issuerRef:
+    name: openbao-recovery-ca
+    kind: Issuer

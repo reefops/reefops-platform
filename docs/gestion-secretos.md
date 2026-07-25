@@ -161,6 +161,48 @@ Los JSONL locales son evidencia operativa mutable, no auditoría funcional
 inmutable. Se protegen con permisos mínimos y deberán copiarse al almacén de
 evidencias con retención e integridad cuando ese componente esté desplegado.
 
+### Ensayo aislado de recuperación
+
+El ensayo periódico no reutiliza el namespace, Service, certificados, PVC ni
+identidad del OpenBao activo. Se despliega mediante una raíz IaC opt-in en
+`reefops-openbao-recovery`, con nombre DNS y CA propios, sin Ingress y con
+NetworkPolicy de denegación por defecto. La composición privada habilita esa
+raíz temporalmente mediante una Kustomization independiente; no se incorpora
+al root normal de plataforma.
+
+La secuencia es:
+
+1. reconciliar el entorno aislado y comprobar que nace sin inicializar;
+2. inicializarlo con material temporal, sin imprimirlo ni versionarlo;
+3. descifrar y validar el snapshot y su manifiesto en almacenamiento efímero;
+4. aplicar el restore forzado únicamente al endpoint aislado;
+5. desechar el material temporal y realizar unseal con el material original;
+6. comprobar identidad del clúster restaurado, audit y mounts; la autenticación
+   Kubernetes se prueba separadamente en la autoridad activa;
+7. registrar RPO/RTO, versiones, digest, actor, correlación y resultado;
+8. retirar la Kustomization mediante GitOps y confirmar la eliminación de
+   workloads y PVC temporales.
+
+El script de restore debe recibir y comprobar explícitamente el endpoint y el
+cluster ID objetivo. La aprobación indicará el contexto y namespace de
+recuperación; nunca será válida para `reefops-secrets`. La eliminación de PVC
+del ensayo es intencionada y solo ocurre después de conservar la evidencia.
+Un ensayo exitoso demuestra restaurabilidad técnica del snapshot, no alta
+disponibilidad del Mac Mini ni custodia suficiente de las claves.
+
+Mientras se construye este ensayo, el comando ejecutable de restore solo acepta
+`isolated-recovery`; el restore de la autoridad activa queda deshabilitado y
+requerirá un entrypoint separado con su propia allowlist y aprobación. La
+aprobación aislada queda ligada también al contexto, UID del clúster
+Kubernetes, Service y SNI.
+
+Las tareas `openbao-recovery-preflight` y `openbao-recovery-cleanup-verify`
+materializan las guardas anterior y posterior. El preflight falla si el
+contexto no es el esperado, la autoridad activa deja de estar preparada, el
+target no es el HelmRelease aislado, aparece RBAC cluster-wide o el target ya
+está inicializado. La comprobación de limpieza falla mientras exista cualquier
+namespace, HelmRelease, StatefulSet, pod o PVC del ensayo.
+
 El procedimiento ejecutable y sus comprobaciones se definen en el
 [runbook de recuperación del repositorio de producto](https://github.com/reefops/reefops/blob/main/docs/runbooks/openbao-recuperacion.md).
 
