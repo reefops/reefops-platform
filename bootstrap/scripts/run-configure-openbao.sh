@@ -40,7 +40,7 @@ if [[ "$(kubectl config current-context)" != "${cluster_context}" ]]; then
 fi
 if [[ "$(
   kubectl --context "${cluster_context}" get namespace "${namespace}" \
-    -o jsonpath='{.metadata.labels.reefops\\.io/environment}'
+    -o jsonpath='{.metadata.labels.reefops\.io/environment}'
 )" != "${environment_id}" ]]; then
   echo "El namespace OpenBao no pertenece al entorno esperado." >&2
   exit 1

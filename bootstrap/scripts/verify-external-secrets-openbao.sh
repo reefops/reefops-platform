@@ -222,7 +222,7 @@ if [[ "$(kubectl config current-context)" != "${cluster_context}" ]]; then
 fi
 environment_id="$(
   kubectl --context "${cluster_context}" get namespace "${namespace}" \
-    -o jsonpath='{.metadata.labels.reefops\\.io/environment}'
+    -o jsonpath='{.metadata.labels.reefops\.io/environment}'
 )"
 if [[ "${environment_id}" != "${expected_environment_id}" ]]; then
   error_code="unexpected-environment"
