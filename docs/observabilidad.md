@@ -117,7 +117,32 @@ al terminar.
 
 ## Evolución
 
-Loki y el recolector de logs se añadirán después de SeaweedFS y de probar
-redacción y retención. OpenTelemetry Collector y Tempo se incorporarán antes
-del primer servicio que emita trazas. Ninguna de estas fases enviará datos a
-servicios cloud.
+OpenTelemetry Collector 0.153.0 y Tempo 2.10.5 se incorporan antes del primer
+servicio que emite trazas. El Collector acepta OTLP sólo desde workloads
+allowlisted y autenticados por identidad mTLS de Linkerd, elimina atributos de
+credenciales, identidad y rutas concretas, y
+exporta a Tempo monolítico con almacenamiento local y siete días de retención.
+Grafana consulta Tempo mediante un datasource interno. Ninguna telemetría se
+envía a servicios cloud.
+
+Los logs estructurados permanecen en stdout y son recuperables mediante la API
+de Kubernetes. Loki y su recolector se añadirán sólo después de probar
+redacción, límites y retención; hasta entonces no se declara búsqueda histórica
+centralizada de logs.
+
+## Métricas de recursos y escalado
+
+`platform/metrics-server` instala Metrics Server 0.8.1 desde una imagen
+multi-arquitectura fijada por digest. Esta raíz independiente publica
+`metrics.k8s.io`, requisito operativo de los HPA de Authorizer y Envoy; declarar
+un HPA sin que esa API esté disponible no constituye escalado verificado.
+
+Docker Desktop presenta el kubelet con una cadena TLS que Metrics Server no
+puede validar contra una CA de confianza. Sólo en este entorno local se usa
+`--kubelet-insecure-tls`; no desactiva TLS ni la autenticación del API agregado,
+pero omite la validación del certificado del kubelet. Un entorno compartido o
+de producción deberá retirar ese argumento y distribuir una CA válida.
+
+La aceptación exige que `v1beta1.metrics.k8s.io` informe `Available=True`, que
+`kubectl top nodes` entregue muestras y que los HPA informen
+`AbleToScale=True` y `ScalingActive=True`.

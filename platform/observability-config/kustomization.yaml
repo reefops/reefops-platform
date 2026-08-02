@@ -6,3 +6,4 @@ resources:
   - service-monitors.yaml
   - rules.yaml
   - network-policies.yaml
+  - telemetry.yaml

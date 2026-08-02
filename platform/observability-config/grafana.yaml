@@ -48,6 +48,15 @@ data:
         url: http://reefops-monitoring-prometheus:9090
         isDefault: true
         editable: false
+      - name: Tempo
+        uid: tempo
+        type: tempo
+        access: proxy
+        url: http://tempo:3200
+        editable: false
+        jsonData:
+          tracesToLogsV2: {datasourceUid: ""}
+          serviceMap: {datasourceUid: prometheus}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -142,6 +151,33 @@ data:
       "time": {"from": "now-1h", "to": "now"},
       "title": "ReefOps SeaweedFS",
       "uid": "reefops-seaweedfs",
+      "version": 1
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-authorizer
+  namespace: reefops-observability
+data:
+  authorizer.json: |
+    {
+      "annotations": {"list": []},
+      "editable": false,
+      "panels": [
+        {"datasource":{"type":"prometheus","uid":"prometheus"},"gridPos":{"h":8,"w":6,"x":0,"y":0},"id":1,"targets":[{"expr":"sum(rate(reefops_authorizer_checks_total[5m]))","refId":"A"}],"title":"Checks / second","type":"stat"},
+        {"datasource":{"type":"prometheus","uid":"prometheus"},"gridPos":{"h":8,"w":6,"x":6,"y":0},"id":2,"targets":[{"expr":"sum by (reason) (rate(reefops_authorizer_checks_total{result=\"deny\"}[5m]))","refId":"A"}],"title":"Denials by reason","type":"timeseries"},
+        {"datasource":{"type":"prometheus","uid":"prometheus"},"fieldConfig":{"defaults":{"unit":"s"},"overrides":[]},"gridPos":{"h":8,"w":6,"x":12,"y":0},"id":3,"targets":[{"expr":"histogram_quantile(0.99, sum by (le) (rate(reefops_authorizer_check_duration_seconds_bucket[5m])))","refId":"A"}],"title":"Check p99 latency","type":"stat"},
+        {"datasource":{"type":"prometheus","uid":"prometheus"},"gridPos":{"h":8,"w":6,"x":18,"y":0},"id":4,"targets":[{"expr":"kube_horizontalpodautoscaler_status_current_replicas{namespace=\"reefops-identity\",horizontalpodautoscaler=\"reefops-authorizer\"}","refId":"A"}],"title":"Authorizer replicas","type":"stat"},
+        {"datasource":{"type":"prometheus","uid":"prometheus"},"gridPos":{"h":8,"w":12,"x":0,"y":8},"id":5,"targets":[{"expr":"sum(rate(envoy_http_downstream_rq_total[5m]))","refId":"A"}],"title":"Envoy requests / second","type":"timeseries"},
+        {"datasource":{"type":"prometheus","uid":"prometheus"},"gridPos":{"h":8,"w":12,"x":12,"y":8},"id":6,"targets":[{"expr":"min(envoy_cluster_membership_healthy{envoy_cluster_name=~\".*reefops.authorizer.*\"})","refId":"A"}],"title":"Envoy ext-auth healthy endpoints","type":"stat"}
+      ],
+      "schemaVersion": 42,
+      "tags": ["reefops", "authorizer", "envoy"],
+      "templating": {"list": []},
+      "time": {"from": "now-1h", "to": "now"},
+      "title": "ReefOps Authorization Edge",
+      "uid": "reefops-authorization-edge",
       "version": 1
     }
 ---
@@ -258,6 +294,8 @@ spec:
                   name: grafana-dashboard-platform
               - configMap:
                   name: grafana-dashboard-seaweedfs
+              - configMap:
+                  name: grafana-dashboard-authorizer
         - name: tmp
           emptyDir:
             sizeLimit: 64Mi

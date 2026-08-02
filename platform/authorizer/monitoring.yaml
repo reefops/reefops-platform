@@ -1,0 +1,80 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reefops-authorizer
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  namespaceSelector: {matchNames: [reefops-identity]}
+  selector: {matchLabels: {app.kubernetes.io/name: reefops-authorizer}}
+  endpoints:
+    - {port: metrics, path: /metrics, interval: 15s, scrapeTimeout: 5s}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: reefops-authorizer-linkerd
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  groups:
+    - name: reefops.authorizer.mesh
+      rules:
+        - record: reefops:authorizer_linkerd_requests:rate5m
+          expr: sum(rate(request_total{dst_namespace="reefops-identity",dst_deployment="reefops-authorizer"}[5m]))
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: reefops-authorizer-linkerd
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  namespaceSelector: {matchNames: [reefops-identity]}
+  selector: {matchLabels: {app.kubernetes.io/name: reefops-authorizer}}
+  podMetricsEndpoints:
+    - {port: linkerd-admin, path: /metrics, interval: 15s, scrapeTimeout: 5s}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: reefops-authorizer
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  groups:
+    - name: reefops.authorizer
+      rules:
+        - alert: ReefOpsAuthorizerUnavailable
+          expr: absent(up{namespace="reefops-identity",service="reefops-authorizer"} == 1) or max(up{namespace="reefops-identity",service="reefops-authorizer"}) < 1
+          for: 2m
+          labels: {severity: critical}
+          annotations: {summary: ReefOps Authorizer is unavailable}
+        - alert: ReefOpsAuthorizerAuditUnavailable
+          expr: sum(rate(reefops_authorizer_checks_total{reason="audit_unavailable"}[5m])) > 0
+          for: 2m
+          labels: {severity: critical}
+          annotations: {summary: ReefOps Authorizer cannot persist decisions}
+        - alert: ReefOpsAuthorizerDependencyUnavailable
+          expr: sum(rate(reefops_authorizer_checks_total{reason=~"openfga_unavailable|signing_failed"}[5m])) > 0
+          for: 5m
+          labels: {severity: warning}
+          annotations: {summary: ReefOps Authorizer dependency is failing}
+        - alert: ReefOpsAuthorizerHighLatency
+          expr: histogram_quantile(0.99, sum by (le) (rate(reefops_authorizer_check_duration_seconds_bucket[5m]))) > 0.5
+          for: 10m
+          labels: {severity: warning}
+          annotations: {summary: ReefOps Authorizer p99 latency exceeds 500 ms}
+        - alert: ReefOpsAuthorizerAtMaxReplicas
+          expr: kube_horizontalpodautoscaler_status_current_replicas{namespace="reefops-identity",horizontalpodautoscaler="reefops-authorizer"} >= kube_horizontalpodautoscaler_spec_max_replicas{namespace="reefops-identity",horizontalpodautoscaler="reefops-authorizer"}
+          for: 15m
+          labels: {severity: warning}
+          annotations: {summary: ReefOps Authorizer is at its configured scaling limit}
