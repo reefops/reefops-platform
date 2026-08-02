@@ -1,8 +1,27 @@
 apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
+kind: OCIRepository
 metadata:
-  name: linkerd-edge
-  namespace: linkerd
+  name: linkerd-crds
+  namespace: flux-system
 spec:
   interval: 24h
-  url: https://helm.linkerd.io/edge
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    digest: sha256:f928ec386ce2179b5ebd3cae11ab631d3ea3a4e2da3070b3ddfd360449ea95ee
+  url: oci://ghcr.io/reefops/linkerd-crds
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: linkerd-control-plane
+  namespace: flux-system
+spec:
+  interval: 24h
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    digest: sha256:eea15b93b2632c72d871dd076ae5b3436d4582fd869a3fbe1ea6d14eb2001e5b
+  url: oci://ghcr.io/reefops/linkerd-control-plane

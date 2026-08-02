@@ -8,15 +8,11 @@ metadata:
 spec:
   interval: 30m
   timeout: 15m
-  chart:
-    spec:
-      chart: nats
-      version: 2.14.2
-      sourceRef:
-        kind: HelmRepository
-        name: nats
-        namespace: reefops-system
-      interval: 24h
+  releaseName: reefops-nats
+  chartRef:
+    kind: OCIRepository
+    name: nats
+    namespace: flux-system
   install:
     remediation:
       retries: 3

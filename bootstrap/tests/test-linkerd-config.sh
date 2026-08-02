@@ -24,9 +24,16 @@ if ! yq eval -e '
   exit 1
 fi
 
+if [[ "$(yq eval 'select(.kind == "OCIRepository") | .metadata.name' \
+  "${temp_dir}/linkerd-crds.yaml" | sed '/^---$/d' | awk 'NF {n++} END {print n+0}')" -ne 2 ]]; then
+  echo "Linkerd no contiene sus dos fuentes OCI separadas." >&2
+  exit 1
+fi
+
 yq eval -e '
   select(.kind == "HelmRelease" and .metadata.name == "linkerd-control-plane") |
-  .spec.chart.spec.version == "2026.7.2" and
+  .spec.chartRef.kind == "OCIRepository" and
+  .spec.chartRef.name == "linkerd-control-plane" and
   .spec.values.identity.externalCA == true and
   .spec.values.identity.issuer.scheme == "kubernetes.io/tls" and
   (.spec.values.controllerImageVersion |

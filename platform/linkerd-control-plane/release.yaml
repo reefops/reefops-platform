@@ -8,14 +8,11 @@ metadata:
 spec:
   interval: 30m
   timeout: 15m
-  chart:
-    spec:
-      chart: linkerd-control-plane
-      version: 2026.7.2
-      sourceRef:
-        kind: HelmRepository
-        name: linkerd-edge
-        namespace: linkerd
+  releaseName: linkerd-control-plane
+  chartRef:
+    kind: OCIRepository
+    name: linkerd-control-plane
+    namespace: flux-system
   install:
     remediation:
       retries: 3
