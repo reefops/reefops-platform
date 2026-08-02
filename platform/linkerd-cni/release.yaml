@@ -21,6 +21,8 @@ spec:
       retries: 3
       strategy: rollback
   values:
+    # Docker Desktop's cri-dockerd reads CNI binaries from this host path.
+    destCNIBinDir: /var/lib/cni-plugins/bin
     image:
       version: v1.7.0-alpha.1@sha256:44a882ca2f3ffa2a11a5c4bef306a9af5edfb317afa7e15163a06cd6fb77d308
     enablePSP: false

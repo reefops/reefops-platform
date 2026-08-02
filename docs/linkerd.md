@@ -2,7 +2,8 @@
 
 Development usa el control plane comunitario edge 26.7.2 con una sola réplica,
 CNI dedicado y sin extensiones viz ni multiclúster. El CNI es la única pieza
-privilegiada y vive en `linkerd-cni`; permite mantener control plane y workloads
+privilegiada y vive en `linkerd-cni`; en Docker Desktop instala el binario en
+`/var/lib/cni-plugins/bin`, la ruta configurada por `cri-dockerd`. Esto permite mantener control plane y workloads
 bajo Pod Security `restricted`. La inyección se habilita de forma
 explícita por workload; instalar el control plane no incorpora automáticamente
 OpenBao, PostgreSQL, SeaweedFS ni NATS a la malla.
