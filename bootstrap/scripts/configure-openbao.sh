@@ -82,6 +82,8 @@ bao policy write reefops-seaweedfs-external-secrets \
   "${policy_dir}/seaweedfs-external-secrets.hcl" >/dev/null
 bao policy write reefops-postgresql-external-secrets \
   "${policy_dir}/postgresql-external-secrets.hcl" >/dev/null
+bao policy write reefops-openfga-external-secrets \
+  "${policy_dir}/openfga-external-secrets.hcl" >/dev/null
 
 bao write auth/kubernetes/role/reefops-backup \
   bound_service_account_names=openbao-backup \
@@ -115,6 +117,13 @@ bao write auth/kubernetes/role/reefops-postgresql-external-secrets \
   bound_service_account_names=external-secrets-postgresql-openbao \
   bound_service_account_namespaces=reefops-data \
   policies=reefops-postgresql-external-secrets \
+  token_ttl=5m \
+  token_max_ttl=10m >/dev/null
+
+bao write auth/kubernetes/role/reefops-openfga-external-secrets \
+  bound_service_account_names=external-secrets-openfga-openbao \
+  bound_service_account_namespaces=reefops-identity \
+  policies=reefops-openfga-external-secrets \
   token_ttl=5m \
   token_max_ttl=10m >/dev/null
 

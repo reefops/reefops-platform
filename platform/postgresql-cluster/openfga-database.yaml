@@ -1,0 +1,14 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: openfga
+  namespace: reefops-data
+  labels:
+    app.kubernetes.io/name: openfga
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+spec:
+  name: openfga
+  owner: openfga
+  cluster:
+    name: reefops-postgresql

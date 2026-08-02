@@ -1,11 +1,3 @@
-path "platform/data/postgresql/barman-s3" {
-  capabilities = ["read"]
-}
-
-path "platform/metadata/postgresql/barman-s3" {
-  capabilities = ["read"]
-}
-
 path "platform/data/identity/openfga-postgresql" {
   capabilities = ["read"]
 }

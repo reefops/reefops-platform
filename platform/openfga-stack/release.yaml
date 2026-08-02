@@ -1,0 +1,63 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata: {name: openfga, namespace: reefops-identity}
+spec:
+  interval: 30m
+  timeout: 10m
+  releaseName: openfga
+  chartRef: {kind: OCIRepository, name: openfga, namespace: flux-system}
+  install:
+    remediation: {retries: 3}
+  upgrade:
+    cleanupOnFail: true
+    remediation: {retries: 3, strategy: rollback}
+  values:
+    replicaCount: 1
+    commonLabels:
+      app.kubernetes.io/part-of: reefops
+      reefops.io/environment: development
+    image:
+      repository: openfga/openfga
+      tag: v1.18.1@sha256:efde89d24487da1a8bc37d85b61341f1fb7024943a1ded65f4b7d51a75666688
+      pullPolicy: IfNotPresent
+    initContainer:
+      repository: groundnuty/k8s-wait-for
+      tag: v2.0@sha256:c14d7271e4013b24b34ef0d7144c4610577d0e9110ccc26b163fa28089fa1f4e
+      pullPolicy: IfNotPresent
+    datastore:
+      engine: postgres
+      uriSecret: openfga-postgresql
+      applyMigrations: true
+      waitForMigrations: true
+      migrationType: job
+      migrations:
+        resources:
+          requests: {cpu: 20m, memory: 32Mi}
+          limits: {cpu: 250m, memory: 128Mi}
+        image:
+          repository: groundnuty/k8s-wait-for
+          tag: v2.0@sha256:c14d7271e4013b24b34ef0d7144c4610577d0e9110ccc26b163fa28089fa1f4e
+          pullPolicy: IfNotPresent
+    playground: {enabled: false}
+    http:
+      enabled: true
+      corsAllowedOrigins: []
+      corsAllowedHeaders: []
+    authn: {method: none}
+    telemetry:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          additionalLabels: {app.kubernetes.io/part-of: reefops}
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile: {type: RuntimeDefault}
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities: {drop: ["ALL"]}
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+    resources:
+      requests: {cpu: 50m, memory: 96Mi}
+      limits: {cpu: 500m, memory: 384Mi}

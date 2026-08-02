@@ -1,0 +1,11 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata: {name: openfga, namespace: flux-system}
+spec:
+  interval: 24h
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    digest: sha256:b0568038e3fdc214f6760d4a5b01f9922754e109931d97190dafd8d380fae2af
+  url: oci://ghcr.io/reefops/openfga
