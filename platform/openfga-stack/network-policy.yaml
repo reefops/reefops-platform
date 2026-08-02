@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openfga-ingress
+  namespace: reefops-identity
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: openfga
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: reefops-authorizer
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: openfga-relation-writer
+      ports:
+        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 8081}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: reefops-observability
+      ports:
+        - {protocol: TCP, port: 2112}

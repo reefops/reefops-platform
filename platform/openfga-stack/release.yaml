@@ -42,7 +42,10 @@ spec:
       enabled: true
       corsAllowedOrigins: []
       corsAllowedHeaders: []
-    authn: {method: none}
+    authn:
+      method: preshared
+      preshared:
+        keysSecret: openfga-auth
     telemetry:
       metrics:
         enabled: true
