@@ -20,6 +20,7 @@ tasks:
       - kubectl kustomize platform/nats-config >/dev/null
       - kubectl kustomize platform/linkerd-certificates >/dev/null
       - kubectl kustomize platform/linkerd-crds >/dev/null
+      - kubectl kustomize platform/linkerd-cni >/dev/null
       - kubectl kustomize platform/linkerd-control-plane >/dev/null
       - kubectl kustomize platform/external-secrets-data >/dev/null
       - kubectl kustomize platform/seaweedfs-secret >/dev/null
@@ -43,6 +44,7 @@ tasks:
       - kubectl kustomize platform/nats-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/linkerd-certificates | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/linkerd-crds | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/linkerd-cni | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/linkerd-control-plane | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/external-secrets-data | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-secret | kubeconform -strict -ignore-missing-schemas -summary

@@ -1,0 +1,36 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: linkerd-cni
+  namespace: linkerd-cni
+  annotations:
+    reefops.io/chart-sha256: 43fa8a9eb29aaa0d672efde7948d2dca2e72a787d2f8c3c9fccbab91136db6dc
+spec:
+  interval: 30m
+  timeout: 10m
+  releaseName: linkerd-cni
+  chartRef:
+    kind: OCIRepository
+    name: linkerd2-cni
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    image:
+      version: v1.7.0-alpha.1@sha256:44a882ca2f3ffa2a11a5c4bef306a9af5edfb317afa7e15163a06cd6fb77d308
+    enablePSP: false
+    privileged: false
+    repairController:
+      enabled: false
+    resources:
+      cpu:
+        request: 20m
+        limit: 200m
+      memory:
+        request: 32Mi
+        limit: 128Mi

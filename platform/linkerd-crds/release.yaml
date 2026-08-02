@@ -13,4 +13,4 @@ spec:
     name: linkerd-crds
     namespace: flux-system
   values:
-    cniEnabled: false
+    cniEnabled: true

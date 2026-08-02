@@ -10,4 +10,5 @@ resources:
   - nats-config
   - linkerd-certificates
   - linkerd-crds
+  - linkerd-cni
   - linkerd-control-plane

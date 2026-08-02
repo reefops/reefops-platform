@@ -1,0 +1,13 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: linkerd2-cni
+  namespace: flux-system
+spec:
+  interval: 24h
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    digest: sha256:bd1b4cbfbea483decc4a1f258c0484905d4149df9d5fd7a14dd286df003a8d1a
+  url: oci://ghcr.io/reefops/linkerd2-cni

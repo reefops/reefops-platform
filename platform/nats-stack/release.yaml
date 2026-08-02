@@ -66,6 +66,8 @@ spec:
             drop: ["ALL"]
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
           seccompProfile:
             type: RuntimeDefault
     reloader:
@@ -88,6 +90,8 @@ spec:
             drop: ["ALL"]
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
           seccompProfile:
             type: RuntimeDefault
     service:
@@ -106,6 +110,9 @@ spec:
           automountServiceAccountToken: false
           securityContext:
             runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
             seccompProfile:
               type: RuntimeDefault
     podDisruptionBudget:
