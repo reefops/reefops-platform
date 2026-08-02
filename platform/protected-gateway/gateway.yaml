@@ -19,6 +19,8 @@ spec:
             capabilities: {drop: [ALL]}
             readOnlyRootFilesystem: true
             runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
             seccompProfile: {type: RuntimeDefault}
         pod:
           annotations: {linkerd.io/inject: enabled}
