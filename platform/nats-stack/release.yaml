@@ -48,7 +48,7 @@ spec:
       monitor:
         enabled: true
       merge:
-        max_payload: 4MB
+        max_payload: 4194304
     container:
       image:
         fullImageName: nats@sha256:952d157e28d5394a211229bd57a7b37ff9f184e58e2c8486a08fa909fd254e32
