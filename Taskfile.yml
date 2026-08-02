@@ -23,6 +23,7 @@ tasks:
       - kubectl kustomize platform/linkerd-cni >/dev/null
       - kubectl kustomize platform/linkerd-control-plane >/dev/null
       - kubectl kustomize platform/external-secrets-data >/dev/null
+      - kubectl kustomize platform/external-secrets-identity >/dev/null
       - kubectl kustomize platform/seaweedfs-secret >/dev/null
       - kubectl kustomize platform/seaweedfs-stack >/dev/null
       - kubectl kustomize platform/seaweedfs-config >/dev/null
@@ -47,6 +48,7 @@ tasks:
       - kubectl kustomize platform/linkerd-cni | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/linkerd-control-plane | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/external-secrets-data | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/external-secrets-identity | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-secret | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-config | kubeconform -strict -ignore-missing-schemas -summary
@@ -63,6 +65,7 @@ tasks:
       - ./bootstrap/tests/test-environment-foundation.sh
       - ./bootstrap/tests/test-external-secrets-openbao.sh
       - ./bootstrap/tests/test-external-secrets-data.sh
+      - ./bootstrap/tests/test-external-secrets-identity.sh
       - ./bootstrap/tests/test-openbao-artifacts.sh
       - ./bootstrap/tests/test-observability-artifacts.sh
       - ./bootstrap/tests/test-observability-config.sh
