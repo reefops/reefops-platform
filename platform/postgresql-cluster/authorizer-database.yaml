@@ -1,0 +1,14 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: reefops-authorizer-audit
+  namespace: reefops-data
+  labels:
+    app.kubernetes.io/name: reefops-authorizer
+    app.kubernetes.io/part-of: reefops
+    reefops.io/environment: development
+spec:
+  name: reefops_authorizer_audit
+  owner: reefops_authorizer_owner
+  cluster:
+    name: reefops-postgresql
