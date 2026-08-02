@@ -1,0 +1,16 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: linkerd-crds
+  namespace: linkerd
+  annotations:
+    reefops.io/chart-sha256: d7a93399d5850a036a94174a9f9a65e7f4192dd1df9d440171853e0bd4188e1f
+spec:
+  interval: 30m
+  releaseName: linkerd-crds
+  chartRef:
+    kind: OCIRepository
+    name: linkerd-crds
+    namespace: flux-system
+  values:
+    cniEnabled: false

@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: reefops-nats
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+spec:
+  namespaceSelector:
+    matchNames: [reefops-system]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nats
+      app.kubernetes.io/instance: reefops-nats
+  podMetricsEndpoints:
+    - port: prom-metrics
+      interval: 30s
+      scrapeTimeout: 10s

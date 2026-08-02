@@ -1,0 +1,114 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: reefops-nats
+  namespace: reefops-system
+  annotations:
+    reefops.io/chart-sha256: 86e0fbfe000b6d7fe70a3032ad3a667252f2d3dd2022e95f7330704d947d0f84
+spec:
+  interval: 30m
+  timeout: 15m
+  releaseName: reefops-nats
+  chartRef:
+    kind: OCIRepository
+    name: nats
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    fullnameOverride: reefops-nats
+    config:
+      cluster:
+        enabled: false
+      jetstream:
+        enabled: true
+        fileStore:
+          enabled: true
+          maxSize: 8Gi
+          pvc:
+            enabled: true
+            size: 10Gi
+            storageClassName: reefops-hostpath-retain
+            merge:
+              metadata:
+                annotations:
+                  helm.sh/resource-policy: keep
+      leafnodes:
+        enabled: false
+      websocket:
+        enabled: false
+      mqtt:
+        enabled: false
+      gateway:
+        enabled: false
+      monitor:
+        enabled: true
+      merge:
+        max_payload: 4MB
+    container:
+      image:
+        fullImageName: nats@sha256:952d157e28d5394a211229bd57a7b37ff9f184e58e2c8486a08fa909fd254e32
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      merge:
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+    reloader:
+      enabled: false
+    promExporter:
+      enabled: true
+      image:
+        fullImageName: natsio/prometheus-nats-exporter@sha256:4fbf6dacb84780a45a1c3af9b1080c69451a288d20902deae671b80717bb8f61
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 96Mi
+      merge:
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+    service:
+      ports:
+        nats:
+          enabled: true
+        monitor:
+          enabled: false
+      merge:
+        spec:
+          type: ClusterIP
+    podTemplate:
+      configChecksumAnnotation: true
+      merge:
+        spec:
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+    podDisruptionBudget:
+      enabled: false
+    natsBox:
+      enabled: false

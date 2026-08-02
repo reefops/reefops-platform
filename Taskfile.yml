@@ -16,6 +16,11 @@ tasks:
       - kubectl kustomize platform/observability-config >/dev/null
       - kubectl kustomize platform/envoy-gateway-stack >/dev/null
       - kubectl kustomize platform/envoy-gateway-config >/dev/null
+      - kubectl kustomize platform/nats-stack >/dev/null
+      - kubectl kustomize platform/nats-config >/dev/null
+      - kubectl kustomize platform/linkerd-certificates >/dev/null
+      - kubectl kustomize platform/linkerd-crds >/dev/null
+      - kubectl kustomize platform/linkerd-control-plane >/dev/null
       - kubectl kustomize platform/external-secrets-data >/dev/null
       - kubectl kustomize platform/seaweedfs-secret >/dev/null
       - kubectl kustomize platform/seaweedfs-stack >/dev/null
@@ -34,6 +39,11 @@ tasks:
       - kubectl kustomize platform/observability-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/envoy-gateway-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/envoy-gateway-config | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/nats-stack | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/nats-config | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/linkerd-certificates | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/linkerd-crds | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/linkerd-control-plane | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/external-secrets-data | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-secret | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/seaweedfs-stack | kubeconform -strict -ignore-missing-schemas -summary
@@ -58,6 +68,8 @@ tasks:
       - ./bootstrap/tests/test-envoy-gateway-artifacts.sh
       - ./bootstrap/tests/test-envoy-gateway-config.sh
       - ./bootstrap/tests/test-envoy-gateway-evidence-backup.sh
+      - ./bootstrap/tests/test-nats-config.sh
+      - ./bootstrap/tests/test-linkerd-config.sh
       - ./bootstrap/tests/test-seaweedfs-artifacts.sh
       - ./bootstrap/tests/test-seaweedfs-config.sh
       - ./bootstrap/tests/test-postgresql-artifacts.sh

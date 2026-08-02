@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: reefops-nats
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+spec:
+  groups:
+    - name: reefops-nats
+      rules:
+        - alert: ReefOpsNATSUnavailable
+          expr: up{namespace="reefops-system",pod=~"reefops-nats.*"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: NATS no está disponible en development
+        - alert: ReefOpsNATSJetStreamStorageHigh
+          expr: nats_jetstream_server_store_used / nats_jetstream_server_store_total > 0.8
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: JetStream supera el 80% de almacenamiento

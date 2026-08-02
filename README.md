@@ -30,4 +30,11 @@ The inert Envoy Gateway foundation described in `docs/envoy-gateway.md` is
 operational and accepted: Gateway API CRDs and a digest-pinned controller, with
 metrics visible internally and no Gateway, route, listener, data plane or
 external Service. Its evidence is backed up encrypted and was verified by
-temporary decryption. The next stateful platform gate is SeaweedFS.
+temporary decryption.
+
+SeaweedFS and PostgreSQL are operational. PostgreSQL uses CloudNativePG and the
+CNPG-I Barman Cloud plugin, archives WAL and physical backups to the internal
+SeaweedFS S3 contract, and has passed an isolated PITR drill whose temporary
+resources were removed through GitOps. Rehydration from an encrypted external
+copy into an empty S3 backend remains a disaster-recovery gate. The next
+platform component is NATS JetStream.

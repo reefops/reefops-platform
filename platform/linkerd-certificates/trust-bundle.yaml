@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linkerd-identity-trust-roots
+  namespace: linkerd
+  annotations:
+    cert-manager.io/inject-ca-from-secret: cert-manager/linkerd-trust-anchor
+data:
+  ca-bundle.crt: ""

@@ -6,3 +6,8 @@ resources:
   - openbao
   - external-secrets
   - external-secrets-openbao
+  - nats-stack
+  - nats-config
+  - linkerd-certificates
+  - linkerd-crds
+  - linkerd-control-plane
