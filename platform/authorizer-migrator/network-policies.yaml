@@ -1,0 +1,68 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: authorizer-migrator-default-deny
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: reefops-authorizer-migrator
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: authorizer-migrator-dns-egress
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: reefops-authorizer-migrator
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: authorizer-migrator-postgresql-egress
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: reefops-authorizer-migrator
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: reefops-postgresql
+      ports:
+        - {protocol: TCP, port: 5432}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-authorizer-migrator-ingress
+  namespace: reefops-data
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: reefops-postgresql
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: reefops-authorizer-migrator
+      ports:
+        - {protocol: TCP, port: 5432}

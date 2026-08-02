@@ -33,6 +33,7 @@ tasks:
       - kubectl kustomize platform/postgresql-cluster >/dev/null
       - kubectl kustomize platform/postgresql-config >/dev/null
       - kubectl kustomize platform/postgresql-recovery-drill >/dev/null
+      - kubectl kustomize platform/authorizer-migrator >/dev/null
       - kubectl kustomize recovery/openbao >/dev/null
       - kubectl kustomize infrastructure/base | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize environments/development | kubeconform -strict -ignore-missing-schemas -summary
@@ -58,6 +59,7 @@ tasks:
       - kubectl kustomize platform/postgresql-cluster | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/postgresql-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/postgresql-recovery-drill | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/authorizer-migrator | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize recovery/openbao | kubeconform -strict -ignore-missing-schemas -summary
       - bash -n bootstrap/scripts/*.sh bootstrap/scripts/lib/*.sh bootstrap/tests/*.sh
       - shellcheck bootstrap/scripts/*.sh bootstrap/scripts/lib/*.sh
@@ -80,6 +82,7 @@ tasks:
       - ./bootstrap/tests/test-postgresql-artifacts.sh
       - ./bootstrap/tests/test-postgresql-config.sh
       - ./bootstrap/tests/test-postgresql-recovery-drill.sh
+      - ./bootstrap/tests/test-authorizer-migrator.sh
       - ./bootstrap/tests/test-openbao-recovery-close.sh
       - ./bootstrap/tests/test-openbao-recovery-target-allowlist.sh
       - gitleaks git --config .gitleaks.toml --no-banner --redact --exit-code 1 .

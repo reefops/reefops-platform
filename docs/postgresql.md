@@ -109,6 +109,24 @@ Operador, plugin, Cluster y backup no dependen de observabilidad. Los
 sin impedir el servicio PostgreSQL. El sidecar Barman inyectado en la instancia
 declara requests y limits propios, además de los del Deployment central.
 
+### Migración de auditoría del Authorizer
+
+`platform/authorizer-migrator` ejecuta el migrador versionado del producto como
+un Job finito después de que base, roles, secretos y políticas PostgreSQL estén
+listos. La imagen queda fijada por digest y el SQL viaja embebido: el Job no
+descarga una rama ni monta scripts mutables.
+
+La identidad `reefops_authorizer_migrator` recibe su URI desde ESO, puede asumir
+el owner DDL y no se monta en el runtime. El pod es non-root, no usa token de
+ServiceAccount y sólo obtiene salida DNS y conexión TLS al Cluster. La política
+de ingreso correspondiente selecciona únicamente ese workload. El Job terminado
+se conserva como evidencia y una versión posterior usa un nombre nuevo; Flux
+podará la versión anterior después de promover el nuevo estado.
+
+La reconciliación falla cerrada si el Job no completa. Un rollback de Git no
+ejecuta `down`: antes de promover una migración incompatible se declarará su
+estrategia de restauración o migración compensatoria.
+
 ## Gate de aceptación
 
 La aceptación exigirá revisiones exactas, digests efectivos, ausencia de
