@@ -13,3 +13,11 @@ path "platform/data/identity/openfga-auth" {
 path "platform/metadata/identity/openfga-auth" {
   capabilities = ["read"]
 }
+
+path "platform/data/identity/openfga-runtime" {
+  capabilities = ["read"]
+}
+
+path "platform/metadata/identity/openfga-runtime" {
+  capabilities = ["read"]
+}
