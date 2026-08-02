@@ -6,6 +6,7 @@ resources:
   - openbao
   - external-secrets
   - external-secrets-openbao
+  - external-secrets-identity
   - nats-stack
   - nats-config
   - linkerd-certificates

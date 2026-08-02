@@ -1,0 +1,51 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-secrets-identity
+  namespace: reefops-identity
+spec:
+  interval: 30m
+  timeout: 10m
+  releaseName: external-secrets-identity
+  chartRef:
+    kind: OCIRepository
+    name: external-secrets
+    namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      strategy: rollback
+  values:
+    installCRDs: false
+    scopedNamespace: reefops-identity
+    scopedRBAC: true
+    processClusterExternalSecret: false
+    processClusterPushSecret: false
+    processClusterStore: false
+    processClusterGenerator: false
+    processPushSecret: false
+    leaderElect: false
+    concurrent: 1
+    image:
+      tag: v2.8.0@sha256:24c0dd3699e0988520afd2218612758cd97d1f702757b5b4fcf89adaa33ef679
+    rbac:
+      serviceAccountTokenCreate: false
+      servicebindings:
+        create: false
+      aggregateToView: false
+      aggregateToEdit: false
+      aggregateToAdmin: false
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+    webhook:
+      create: false
+    certController:
+      create: false
