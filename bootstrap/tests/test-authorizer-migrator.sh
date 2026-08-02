@@ -5,16 +5,20 @@ project_root="$(git rev-parse --show-toplevel)"
 rendered="$(kubectl kustomize "${project_root}/platform/authorizer-migrator")"
 
 yq eval -e '
-  select(.kind == "Job" and .metadata.name == "reefops-authorizer-migrate-2d56e3d") |
+  select(.kind == "Job" and .metadata.name == "reefops-authorizer-migrate-2d56e3d-r2") |
   .metadata.namespace == "reefops-data" and
   .spec.backoffLimit == 3 and
   .spec.activeDeadlineSeconds == 300 and
   .spec.template.spec.automountServiceAccountToken == false and
   .spec.template.spec.restartPolicy == "Never" and
+  .spec.template.spec.securityContext.runAsUser == 65532 and
+  .spec.template.spec.securityContext.runAsGroup == 65532 and
   (.spec.template.spec.containers[0].image ==
     "ghcr.io/reefops/reefops-authorizer-migrator@sha256:6ef5fe1f92a7b03b0905c09f3ba59dec6a156b6b6fb11bcf7f79410df0cb8490") and
   .spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation == false and
   .spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem == true and
+  .spec.template.spec.containers[0].securityContext.runAsUser == 65532 and
+  .spec.template.spec.containers[0].securityContext.runAsGroup == 65532 and
   .spec.template.spec.containers[0].env[0].valueFrom.secretKeyRef.name ==
     "authorizer-migrator-postgresql" and
   .spec.template.spec.containers[0].env[0].valueFrom.secretKeyRef.key == "uri"
