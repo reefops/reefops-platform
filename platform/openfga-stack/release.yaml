@@ -28,7 +28,7 @@ spec:
       uriSecret: openfga-postgresql
       applyMigrations: true
       waitForMigrations: true
-      migrationType: job
+      migrationType: initContainer
       migrations:
         resources:
           requests: {cpu: 20m, memory: 32Mi}
@@ -48,7 +48,6 @@ spec:
         enabled: true
         serviceMonitor:
           enabled: true
-          additionalLabels: {app.kubernetes.io/part-of: reefops}
     podSecurityContext:
       runAsNonRoot: true
       seccompProfile: {type: RuntimeDefault}
