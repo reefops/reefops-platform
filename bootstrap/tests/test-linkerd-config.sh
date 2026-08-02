@@ -36,6 +36,7 @@ yq eval -e '
   .spec.chartRef.name == "linkerd2-cni" and
   (.spec.values.image.version |
     test("^v1\\.7\\.0-alpha\\.1@sha256:[a-f0-9]{64}$")) and
+  .spec.values.destCNIBinDir == "/var/lib/cni-plugins/bin" and
   .spec.values.privileged == false
 ' "${temp_dir}/linkerd-cni.yaml" >/dev/null || {
   echo "Linkerd CNI perdió digest, aislamiento o mínimo privilegio." >&2
