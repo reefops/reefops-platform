@@ -13,6 +13,11 @@ spec:
     kind: OCIRepository
     name: linkerd-control-plane
     namespace: flux-system
+  valuesFrom:
+    - kind: Secret
+      name: linkerd-identity-issuer
+      valuesKey: ca.crt
+      targetPath: identityTrustAnchorsPEM
   install:
     remediation:
       retries: 3
@@ -28,7 +33,7 @@ spec:
         version: edge-26.7.2@sha256:176422083de76ff53438b665651322b4e87844d3eb8aea40ee58b82b773286a0
       logHTTPHeaders: "off"
     identity:
-      externalCA: true
+      externalCA: false
       serviceAccountTokenProjection: true
       issuer:
         scheme: kubernetes.io/tls

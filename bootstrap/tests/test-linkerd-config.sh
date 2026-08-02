@@ -47,7 +47,12 @@ yq eval -e '
   select(.kind == "HelmRelease" and .metadata.name == "linkerd-control-plane") |
   .spec.chartRef.kind == "OCIRepository" and
   .spec.chartRef.name == "linkerd-control-plane" and
-  .spec.values.identity.externalCA == true and
+  .spec.values.identity.externalCA == false and
+  (.spec.valuesFrom | length) == 1 and
+  .spec.valuesFrom[0].kind == "Secret" and
+  .spec.valuesFrom[0].name == "linkerd-identity-issuer" and
+  .spec.valuesFrom[0].valuesKey == "ca.crt" and
+  .spec.valuesFrom[0].targetPath == "identityTrustAnchorsPEM" and
   .spec.values.cniEnabled == true and
   .spec.values.identity.issuer.scheme == "kubernetes.io/tls" and
   (.spec.values.controllerImageVersion |
