@@ -38,6 +38,8 @@ if ! yq eval -e '
     test("^nats@sha256:[a-f0-9]{64}$")) and
   (.spec.values.promExporter.image.fullImageName |
     test("^natsio/prometheus-nats-exporter@sha256:[a-f0-9]{64}$")) and
+  .spec.values.container.merge.securityContext.runAsUser == 1000 and
+  .spec.values.promExporter.merge.securityContext.runAsUser == 1000 and
   .spec.values.natsBox.enabled == false and
   .spec.values.service.merge.spec.type == "ClusterIP"
 ' "${temp_dir}/stack.yaml" >/dev/null; then

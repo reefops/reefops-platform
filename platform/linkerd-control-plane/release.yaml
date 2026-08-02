@@ -20,6 +20,7 @@ spec:
     remediation:
       retries: 3
   values:
+    cniEnabled: true
     controllerImageVersion: edge-26.7.2@sha256:1f90252981b81537fba17e43a7a3acdad9957a3864a86324cee20217fe96016a
     controllerReplicas: 1
     proxy:

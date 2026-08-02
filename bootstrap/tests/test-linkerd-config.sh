@@ -4,7 +4,7 @@ set -euo pipefail
 project_root="$(git rev-parse --show-toplevel)"
 temp_dir="$(mktemp -d)"
 trap 'rm -rf "${temp_dir}"' EXIT
-for root in linkerd-certificates linkerd-crds linkerd-control-plane; do
+for root in linkerd-certificates linkerd-crds linkerd-cni linkerd-control-plane; do
   kubectl kustomize "${project_root}/platform/${root}" >"${temp_dir}/${root}.yaml"
 done
 
@@ -31,10 +31,23 @@ if [[ "$(yq eval 'select(.kind == "OCIRepository") | .metadata.name' \
 fi
 
 yq eval -e '
+  select(.kind == "HelmRelease" and .metadata.name == "linkerd-cni") |
+  .metadata.namespace == "linkerd-cni" and
+  .spec.chartRef.name == "linkerd2-cni" and
+  (.spec.values.image.version |
+    test("^v1\\.7\\.0-alpha\\.1@sha256:[a-f0-9]{64}$")) and
+  .spec.values.privileged == false
+' "${temp_dir}/linkerd-cni.yaml" >/dev/null || {
+  echo "Linkerd CNI perdió digest, aislamiento o mínimo privilegio." >&2
+  exit 1
+}
+
+yq eval -e '
   select(.kind == "HelmRelease" and .metadata.name == "linkerd-control-plane") |
   .spec.chartRef.kind == "OCIRepository" and
   .spec.chartRef.name == "linkerd-control-plane" and
   .spec.values.identity.externalCA == true and
+  .spec.values.cniEnabled == true and
   .spec.values.identity.issuer.scheme == "kubernetes.io/tls" and
   (.spec.values.controllerImageVersion |
     test("^edge-26\\.7\\.2@sha256:[a-f0-9]{64}$")) and
