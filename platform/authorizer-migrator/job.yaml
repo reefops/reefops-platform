@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: reefops-authorizer-migrate-2d56e3d
+  name: reefops-authorizer-migrate-2d56e3d-r2
   namespace: reefops-data
   labels:
     app.kubernetes.io/name: reefops-authorizer-migrator
@@ -27,7 +27,9 @@ spec:
       enableServiceLinks: false
       restartPolicy: Never
       securityContext:
+        runAsGroup: 65532
         runAsNonRoot: true
+        runAsUser: 65532
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -52,4 +54,6 @@ spec:
             capabilities:
               drop: [ALL]
             readOnlyRootFilesystem: true
+            runAsGroup: 65532
             runAsNonRoot: true
+            runAsUser: 65532
