@@ -170,4 +170,52 @@ if [[ "${policy_count}" -lt 4 ]]; then
   exit 1
 fi
 
+for workload in tempo otel-collector; do
+  yq eval -e "
+    select(.kind == \"Deployment\" and .metadata.name == \"${workload}\") |
+    .spec.template.spec.automountServiceAccountToken == false and
+    .spec.template.spec.serviceAccountName == \"${workload}\" and
+    .spec.template.metadata.annotations.\"linkerd.io/inject\" == \"enabled\" and
+    (.spec.template.spec.containers[0].image |
+      test(\"@sha256:[a-f0-9]{64}$\")) and
+    .spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem == true and
+    .spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation == false
+  " "${temp_dir}/config.yaml" >/dev/null
+done
+
+yq eval -e '
+  select(.kind == "ServerAuthorization" and .metadata.name == "otel-collector-producers") |
+  (.spec.client.meshTLS.serviceAccounts | contains([
+    {"name":"reefops-authorizer","namespace":"reefops-identity"},
+    {"name":"reefops-envoy-edge","namespace":"reefops-gateway-system"}
+  ]))
+' "${temp_dir}/config.yaml" >/dev/null
+
+yq eval -e '
+  select(.kind == "ServerAuthorization" and .metadata.name == "tempo-from-collector") |
+  (.spec.client.meshTLS.serviceAccounts | contains([
+    {"name":"otel-collector","namespace":"reefops-observability"}
+  ]))
+' "${temp_dir}/config.yaml" >/dev/null
+
+if ! yq eval -e '
+  select(.kind == "ConfigMap" and .metadata.name == "otel-collector-config") |
+  (.data."config.yaml" | contains("attributes/redact")) and
+  (.data."config.yaml" | contains("http.request.header.authorization")) and
+  (.data."config.yaml" | contains("url.path")) and
+  (.data."config.yaml" | contains("otlp/tempo"))
+  ' "${temp_dir}/config.yaml" >/dev/null; then
+  echo "El Collector no conserva el contrato de redacción y export OTLP interno." >&2
+  exit 1
+fi
+
+if ! yq eval -e '
+  select(.kind == "ConfigMap" and .metadata.name == "grafana-datasource") |
+  (.data."prometheus.yaml" | contains("uid: tempo")) and
+  (.data."prometheus.yaml" | contains("http://tempo:3200"))
+  ' "${temp_dir}/config.yaml" >/dev/null; then
+  echo "Grafana no tiene el datasource Tempo interno aprovisionado." >&2
+  exit 1
+fi
+
 echo "RBAC, Grafana, reglas, monitores y red de observabilidad validados."

@@ -1,0 +1,37 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: reefops-envoy-edge
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  namespaceSelector: {matchNames: [reefops-gateway-system]}
+  selector: {matchLabels: {reefops.io/gateway: edge}}
+  podMetricsEndpoints:
+    - {port: metrics, path: /stats/prometheus, interval: 15s, scrapeTimeout: 5s}
+    - {port: linkerd-admin, path: /metrics, interval: 15s, scrapeTimeout: 5s}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: reefops-envoy-edge
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  groups:
+    - name: reefops.envoy.edge
+      rules:
+        - alert: ReefOpsEnvoyEdgeUnavailable
+          expr: absent(up{namespace="reefops-gateway-system",pod=~"envoy-reefops-.*"} == 1)
+          for: 2m
+          labels: {severity: critical}
+          annotations: {summary: ReefOps Envoy data plane is unavailable}
+        - alert: ReefOpsEnvoyExtAuthClusterUnhealthy
+          expr: min(envoy_cluster_membership_healthy{envoy_cluster_name=~".*reefops.authorizer.*"}) < 1
+          for: 2m
+          labels: {severity: critical}
+          annotations: {summary: Envoy has no healthy Authorizer endpoint}

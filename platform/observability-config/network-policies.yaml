@@ -24,6 +24,83 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: telemetry-default-deny-egress
+  namespace: reefops-observability
+spec:
+  podSelector:
+    matchExpressions:
+      - {key: app.kubernetes.io/name, operator: In, values: [otel-collector, tempo]}
+  policyTypes: [Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: collector-egress
+  namespace: reefops-observability
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: otel-collector}}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: tempo}}
+      ports: [{protocol: TCP, port: 4317}]
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-otlp-ingress
+  namespace: reefops-observability
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: otel-collector
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: reefops-identity
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: reefops-authorizer
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: reefops-gateway-system
+          podSelector:
+            matchLabels:
+              reefops.io/gateway: edge
+      ports:
+        - {protocol: TCP, port: 4317}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: telemetry-linkerd-egress
+  namespace: reefops-observability
+spec:
+  podSelector:
+    matchExpressions:
+      - {key: app.kubernetes.io/name, operator: In, values: [otel-collector, tempo]}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: linkerd}}
+      ports:
+        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 8086}
+        - {protocol: TCP, port: 8090}
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: default-deny
   namespace: reefops-node-observability
 spec:

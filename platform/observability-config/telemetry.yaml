@@ -1,0 +1,310 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tempo
+  namespace: reefops-observability
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: reefops-observability
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: reefops-observability
+data:
+  tempo.yaml: |
+    auth_enabled: false
+    usage_report:
+      reporting_enabled: false
+    server:
+      http_listen_port: 3200
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+    storage:
+      trace:
+        backend: local
+        wal:
+          path: /var/tempo/wal
+        local:
+          path: /var/tempo/blocks
+    compactor:
+      compaction:
+        block_retention: 168h
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tempo
+  namespace: reefops-observability
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo
+  namespace: reefops-observability
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/part-of: reefops
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: tempo}
+  template:
+    metadata:
+      annotations: {linkerd.io/inject: enabled}
+      labels:
+        app.kubernetes.io/name: tempo
+        app.kubernetes.io/part-of: reefops
+    spec:
+      serviceAccountName: tempo
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: tempo
+          image: docker.io/grafana/tempo@sha256:ee21727732c7a7199cb71c3eee9153bbf23f9b0b87619f0555a0cf21a67f1a33
+          args: [-config.file=/etc/tempo/tempo.yaml]
+          ports:
+            - {name: http, containerPort: 3200}
+            - {name: otlp-grpc, containerPort: 4317}
+          readinessProbe: {httpGet: {path: /ready, port: http}, periodSeconds: 5, timeoutSeconds: 2}
+          livenessProbe: {httpGet: {path: /ready, port: http}, periodSeconds: 10, timeoutSeconds: 2, failureThreshold: 6}
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - {name: config, mountPath: /etc/tempo, readOnly: true}
+            - {name: data, mountPath: /var/tempo}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: config
+          configMap: {name: tempo-config}
+        - name: data
+          persistentVolumeClaim: {claimName: tempo}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo
+  namespace: reefops-observability
+  labels: {app.kubernetes.io/name: tempo}
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/name: tempo}
+  ports:
+    - {name: http, port: 3200, targetPort: http}
+    - {name: otlp-grpc, port: 4317, targetPort: otlp-grpc, appProtocol: grpc}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: reefops-observability
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 192
+        spike_limit_mib: 48
+      attributes/redact:
+        actions:
+          - {key: http.request.header.authorization, action: delete}
+          - {key: http.request.header.cookie, action: delete}
+          - {key: http.request.header.set-cookie, action: delete}
+          - {key: url.full, action: delete}
+          - {key: url.path, action: delete}
+          - {key: http.target, action: delete}
+          - {key: enduser.id, action: delete}
+          - {key: user.id, action: delete}
+      batch: {}
+    exporters:
+      otlp/tempo:
+        endpoint: tempo.reefops-observability.svc.cluster.local:4317
+        tls: {insecure: true}
+    extensions:
+      health_check: {endpoint: 0.0.0.0:13133}
+    service:
+      extensions: [health_check]
+      telemetry:
+        metrics:
+          readers:
+            - pull:
+                exporter:
+                  prometheus: {host: 0.0.0.0, port: 8888}
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, attributes/redact, batch]
+          exporters: [otlp/tempo]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: reefops-observability
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: reefops
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: otel-collector}
+  template:
+    metadata:
+      annotations: {linkerd.io/inject: enabled}
+      labels:
+        app.kubernetes.io/name: otel-collector
+        app.kubernetes.io/part-of: reefops
+    spec:
+      serviceAccountName: otel-collector
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: collector
+          image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib@sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa
+          args: [--config=/etc/otel/config.yaml]
+          ports:
+            - {name: otlp-grpc, containerPort: 4317}
+            - {name: health, containerPort: 13133}
+            - {name: metrics, containerPort: 8888}
+          readinessProbe: {httpGet: {path: /, port: health}, periodSeconds: 5, timeoutSeconds: 2}
+          livenessProbe: {httpGet: {path: /, port: health}, periodSeconds: 10, timeoutSeconds: 2}
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - {name: config, mountPath: /etc/otel, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: config
+          configMap: {name: otel-collector-config}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: reefops-observability
+  labels: {app.kubernetes.io/name: otel-collector}
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/name: otel-collector}
+  ports:
+    - {name: otlp-grpc, port: 4317, targetPort: otlp-grpc, appProtocol: grpc}
+    - {name: metrics, port: 8888, targetPort: metrics}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reefops-telemetry
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  namespaceSelector: {matchNames: [reefops-observability]}
+  selector: {matchLabels: {app.kubernetes.io/name: otel-collector}}
+  endpoints:
+    - {port: metrics, interval: 30s}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tempo
+  namespace: reefops-observability
+  labels:
+    release: reefops-monitoring
+    reefops.io/monitoring-instance: platform
+spec:
+  namespaceSelector: {matchNames: [reefops-observability]}
+  selector: {matchLabels: {app.kubernetes.io/name: tempo}}
+  endpoints:
+    - {port: http, path: /metrics, interval: 30s}
+---
+apiVersion: policy.linkerd.io/v1beta3
+kind: Server
+metadata:
+  name: otel-collector-otlp
+  namespace: reefops-observability
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: otel-collector}}
+  port: otlp-grpc
+  proxyProtocol: gRPC
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: otel-collector-producers
+  namespace: reefops-observability
+spec:
+  server: {name: otel-collector-otlp}
+  client:
+    meshTLS:
+      serviceAccounts:
+        - {name: reefops-authorizer, namespace: reefops-identity}
+        - {name: reefops-envoy-edge, namespace: reefops-gateway-system}
+---
+apiVersion: policy.linkerd.io/v1beta3
+kind: Server
+metadata:
+  name: tempo-otlp
+  namespace: reefops-observability
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: tempo}}
+  port: otlp-grpc
+  proxyProtocol: gRPC
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: tempo-from-collector
+  namespace: reefops-observability
+spec:
+  server: {name: tempo-otlp}
+  client:
+    meshTLS:
+      serviceAccounts:
+        - {name: otel-collector, namespace: reefops-observability}

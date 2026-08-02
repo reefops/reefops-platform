@@ -76,3 +76,13 @@ cifrado fija hashes, recuento y retención mínima de 365 días.
 
 Esta aceptación no prueba tráfico norte-sur porque crear dicho tráfico violaría
 el alcance de la etapa.
+
+## Activación del data plane protegido
+
+La raíz posterior `platform/protected-gateway` crea `GatewayClass`,
+`EnvoyProxy` y un `Gateway` `ClusterIP` sin rutas. El proxy usa imagen por
+digest, Linkerd, HPA de una a cinco réplicas, métricas Prometheus, trazas OTLP y
+access logs JSON redactados. Crear el listener sin `HTTPRoute` mantiene la
+entrada cerrada mientras se valida el data plane; la ruta sintética y su
+`SecurityPolicy` ext-auth se incorporan sólo junto con identidad confiable y
+tuples de aceptación.

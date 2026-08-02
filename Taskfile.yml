@@ -14,8 +14,10 @@ tasks:
       - kubectl kustomize platform >/dev/null
       - kubectl kustomize platform/observability-stack >/dev/null
       - kubectl kustomize platform/observability-config >/dev/null
+      - kubectl kustomize platform/metrics-server >/dev/null
       - kubectl kustomize platform/envoy-gateway-stack >/dev/null
       - kubectl kustomize platform/envoy-gateway-config >/dev/null
+      - kubectl kustomize platform/protected-gateway >/dev/null
       - kubectl kustomize platform/nats-stack >/dev/null
       - kubectl kustomize platform/nats-config >/dev/null
       - kubectl kustomize platform/linkerd-certificates >/dev/null
@@ -34,14 +36,17 @@ tasks:
       - kubectl kustomize platform/postgresql-config >/dev/null
       - kubectl kustomize platform/postgresql-recovery-drill >/dev/null
       - kubectl kustomize platform/authorizer-migrator >/dev/null
+      - kubectl kustomize platform/authorizer >/dev/null
       - kubectl kustomize recovery/openbao >/dev/null
       - kubectl kustomize infrastructure/base | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize environments/development | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/observability-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/observability-config | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/metrics-server | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/envoy-gateway-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/envoy-gateway-config | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/protected-gateway | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/nats-stack | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/nats-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/linkerd-certificates | kubeconform -strict -ignore-missing-schemas -summary
@@ -60,6 +65,7 @@ tasks:
       - kubectl kustomize platform/postgresql-config | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/postgresql-recovery-drill | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize platform/authorizer-migrator | kubeconform -strict -ignore-missing-schemas -summary
+      - kubectl kustomize platform/authorizer | kubeconform -strict -ignore-missing-schemas -summary
       - kubectl kustomize recovery/openbao | kubeconform -strict -ignore-missing-schemas -summary
       - bash -n bootstrap/scripts/*.sh bootstrap/scripts/lib/*.sh bootstrap/tests/*.sh
       - shellcheck bootstrap/scripts/*.sh bootstrap/scripts/lib/*.sh
@@ -71,9 +77,11 @@ tasks:
       - ./bootstrap/tests/test-openbao-artifacts.sh
       - ./bootstrap/tests/test-observability-artifacts.sh
       - ./bootstrap/tests/test-observability-config.sh
+      - ./bootstrap/tests/test-metrics-server.sh
       - ./bootstrap/tests/test-observability-evidence-backup.sh
       - ./bootstrap/tests/test-envoy-gateway-artifacts.sh
       - ./bootstrap/tests/test-envoy-gateway-config.sh
+      - ./bootstrap/tests/test-protected-gateway.sh
       - ./bootstrap/tests/test-envoy-gateway-evidence-backup.sh
       - ./bootstrap/tests/test-nats-config.sh
       - ./bootstrap/tests/test-linkerd-config.sh
@@ -83,6 +91,7 @@ tasks:
       - ./bootstrap/tests/test-postgresql-config.sh
       - ./bootstrap/tests/test-postgresql-recovery-drill.sh
       - ./bootstrap/tests/test-authorizer-migrator.sh
+      - ./bootstrap/tests/test-authorizer.sh
       - ./bootstrap/tests/test-openbao-recovery-close.sh
       - ./bootstrap/tests/test-openbao-recovery-target-allowlist.sh
       - gitleaks git --config .gitleaks.toml --no-banner --redact --exit-code 1 .

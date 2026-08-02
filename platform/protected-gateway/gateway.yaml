@@ -1,0 +1,134 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: reefops-edge
+  namespace: reefops-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyServiceAccount: {name: reefops-envoy-edge}
+      envoyDeployment:
+        container:
+          image: docker.io/envoyproxy/envoy@sha256:83e4482fc0519fb53e0b2b98a3d0fa2defbb7e204b7f8824516b9025a589fc4a
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 1, memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile: {type: RuntimeDefault}
+        pod:
+          annotations: {linkerd.io/inject: enabled}
+          labels:
+            app.kubernetes.io/part-of: reefops
+            reefops.io/gateway: edge
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile: {type: RuntimeDefault}
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: ScheduleAnyway
+              labelSelector: {matchLabels: {reefops.io/gateway: edge}}
+      envoyService:
+        type: ClusterIP
+        labels:
+          app.kubernetes.io/part-of: reefops
+          reefops.io/gateway: edge
+      envoyHpa:
+        minReplicas: 1
+        maxReplicas: 5
+        metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target: {type: Utilization, averageUtilization: 70}
+        behavior:
+          scaleUp:
+            stabilizationWindowSeconds: 0
+            policies: [{type: Percent, value: 100, periodSeconds: 60}, {type: Pods, value: 2, periodSeconds: 60}]
+          scaleDown:
+            stabilizationWindowSeconds: 300
+            policies: [{type: Percent, value: 50, periodSeconds: 60}]
+  telemetry:
+    metrics:
+      enableGRPCStats: true
+      enableRequestResponseSizesStats: true
+      prometheus: {disable: false}
+    tracing:
+      samplingRate: 100
+      provider:
+        type: OpenTelemetry
+        serviceName: reefops-envoy-edge
+        backendRefs:
+          - name: otel-collector
+            namespace: reefops-observability
+            port: 4317
+        openTelemetry:
+          resourceAttributes:
+            deployment.environment.name: development
+    accessLog:
+      settings:
+        - format:
+            type: JSON
+            json:
+              start_time: "%START_TIME%"
+              method: "%REQ(:METHOD)%"
+              protocol: "%PROTOCOL%"
+              response_code: "%RESPONSE_CODE%"
+              response_flags: "%RESPONSE_FLAGS%"
+              duration_ms: "%DURATION%"
+              route_name: "%ROUTE_NAME%"
+              request_id: "%REQ(X-REQUEST-ID)%"
+              correlation_id_request: "%REQ(X-CORRELATION-ID)%"
+              correlation_id_response: "%RESP(X-CORRELATION-ID)%"
+              authorization_decision_id_request: "%REQ(X-REEFOPS-AUTHORIZATION-DECISION-ID)%"
+              authorization_decision_id_response: "%RESP(X-REEFOPS-AUTHORIZATION-DECISION-ID)%"
+          sinks:
+            - type: File
+              file: {path: /dev/stdout}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: reefops
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: reefops-edge
+    namespace: reefops-gateway-system
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: reefops
+  namespace: reefops-gateway-system
+spec:
+  gatewayClassName: reefops
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+      hostname: reefops.localhost
+      allowedRoutes:
+        namespaces: {from: Same}
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-envoy-telemetry
+  namespace: reefops-observability
+spec:
+  from:
+    - group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      namespace: reefops-gateway-system
+  to:
+    - group: ""
+      kind: Service
+      name: otel-collector
