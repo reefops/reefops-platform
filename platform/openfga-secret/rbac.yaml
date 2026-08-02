@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-secrets-openfga-openbao
+  namespace: reefops-identity
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: external-secrets-openfga-openbao-token-request
+  namespace: reefops-identity
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    resourceNames: ["external-secrets-openfga-openbao"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: external-secrets-openfga-openbao-token-request
+  namespace: reefops-identity
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: external-secrets-openfga-openbao-token-request
+subjects:
+  - kind: ServiceAccount
+    name: external-secrets-identity
+    namespace: reefops-identity

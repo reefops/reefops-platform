@@ -3,4 +3,5 @@ kind: Kustomization
 resources:
   - object-store.yaml
   - cluster.yaml
+  - openfga-database.yaml
   - scheduled-backup.yaml
