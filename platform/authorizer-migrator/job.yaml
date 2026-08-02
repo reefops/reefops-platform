@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: reefops-authorizer-migrate-2d56e3d
+  namespace: reefops-data
+  labels:
+    app.kubernetes.io/name: reefops-authorizer-migrator
+    app.kubernetes.io/component: database-migration
+    app.kubernetes.io/part-of: reefops
+    app.kubernetes.io/version: 2d56e3d
+    reefops.io/environment: development
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: reefops-authorizer-migrator
+        app.kubernetes.io/component: database-migration
+        app.kubernetes.io/part-of: reefops
+        app.kubernetes.io/version: 2d56e3d
+        reefops.io/environment: development
+      annotations:
+        linkerd.io/inject: disabled
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: ghcr.io/reefops/reefops-authorizer-migrator@sha256:6ef5fe1f92a7b03b0905c09f3ba59dec6a156b6b6fb11bcf7f79410df0cb8490
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REEFOPS_AUTHORIZER_MIGRATOR_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: authorizer-migrator-postgresql
+                  key: uri
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
