@@ -34,6 +34,7 @@ if ! yq eval -e '
   .spec.values.config.mqtt.enabled == false and
   .spec.values.config.leafnodes.enabled == false and
   .spec.values.config.gateway.enabled == false and
+  .spec.values.config.merge.max_payload == 4194304 and
   (.spec.values.container.image.fullImageName |
     test("^nats@sha256:[a-f0-9]{64}$")) and
   (.spec.values.promExporter.image.fullImageName |
