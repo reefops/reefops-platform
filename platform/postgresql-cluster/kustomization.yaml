@@ -4,4 +4,5 @@ resources:
   - object-store.yaml
   - cluster.yaml
   - openfga-database.yaml
+  - authorizer-database.yaml
   - scheduled-backup.yaml
