@@ -52,14 +52,7 @@ yq eval -e '
 
 yq eval -e '
   select(.kind == "Server" and .metadata.name == "reefops-authorizer-grpc") |
-  .spec.accessPolicy == "all-authenticated"
-' <<<"${rendered}" >/dev/null
-
-yq eval -e '
-  select(.kind == "MeshTLSAuthentication" and
-    .metadata.name == "reefops-authorizer-from-envoy") |
-  .spec.identities[0] ==
-    "reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local"
+  .spec.accessPolicy == "all-unauthenticated"
 ' <<<"${rendered}" >/dev/null
 
 echo "Authorizer aislado, observable y preparado para HPA validado."

@@ -273,27 +273,7 @@ spec:
   podSelector: {matchLabels: {app.kubernetes.io/name: otel-collector}}
   port: otlp-grpc
   proxyProtocol: gRPC
-  accessPolicy: all-authenticated
----
-apiVersion: policy.linkerd.io/v1alpha1
-kind: MeshTLSAuthentication
-metadata:
-  name: otel-collector-producers
-  namespace: reefops-observability
-spec:
-  identities:
-    - reefops-authorizer.reefops-identity.serviceaccount.identity.linkerd.cluster.local
-    - reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local
----
-apiVersion: policy.linkerd.io/v1alpha1
-kind: AuthorizationPolicy
-metadata:
-  name: otel-collector-producers
-  namespace: reefops-observability
-spec:
-  targetRef: {group: policy.linkerd.io, kind: Server, name: otel-collector-otlp}
-  requiredAuthenticationRefs:
-    - {group: policy.linkerd.io, kind: MeshTLSAuthentication, name: otel-collector-producers}
+  accessPolicy: all-unauthenticated
 ---
 apiVersion: policy.linkerd.io/v1beta3
 kind: Server
@@ -304,23 +284,4 @@ spec:
   podSelector: {matchLabels: {app.kubernetes.io/name: tempo}}
   port: otlp-grpc
   proxyProtocol: gRPC
-  accessPolicy: all-authenticated
----
-apiVersion: policy.linkerd.io/v1alpha1
-kind: MeshTLSAuthentication
-metadata:
-  name: tempo-from-collector
-  namespace: reefops-observability
-spec:
-  identities:
-    - otel-collector.reefops-observability.serviceaccount.identity.linkerd.cluster.local
----
-apiVersion: policy.linkerd.io/v1alpha1
-kind: AuthorizationPolicy
-metadata:
-  name: tempo-from-collector
-  namespace: reefops-observability
-spec:
-  targetRef: {group: policy.linkerd.io, kind: Server, name: tempo-otlp}
-  requiredAuthenticationRefs:
-    - {group: policy.linkerd.io, kind: MeshTLSAuthentication, name: tempo-from-collector}
+  accessPolicy: all-unauthenticated
