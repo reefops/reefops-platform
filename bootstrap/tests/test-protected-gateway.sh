@@ -55,4 +55,12 @@ yq eval -e '
   ([.spec.podMetricsEndpoints[].port] | contains(["metrics", "linkerd-admin"]))
 ' <<<"${rendered}" >/dev/null
 
+yq eval -e '
+  select(.kind == "PrometheusRule" and .metadata.name == "reefops-envoy-edge") |
+  (.spec.groups[].rules[] | select(.alert == "ReefOpsEnvoyEdgeUnavailable") |
+    .expr as $expr |
+    (($expr | contains("job=\"reefops-observability/reefops-envoy-edge\"")) and
+      ($expr | contains("absent("))))
+' <<<"${rendered}" >/dev/null
+
 echo "Data plane Envoy cerrado, observable y preparado para HPA validado."
