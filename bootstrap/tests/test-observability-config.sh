@@ -184,16 +184,16 @@ for workload in tempo otel-collector; do
 done
 
 yq eval -e '
-  select(.kind == "ServerAuthorization" and .metadata.name == "otel-collector-producers") |
-  (.spec.client.meshTLS.identities | contains([
+  select(.kind == "MeshTLSAuthentication" and .metadata.name == "otel-collector-producers") |
+  (.spec.identities | contains([
     "reefops-authorizer.reefops-identity.serviceaccount.identity.linkerd.cluster.local",
     "reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local"
   ]))
 ' "${temp_dir}/config.yaml" >/dev/null
 
 yq eval -e '
-  select(.kind == "ServerAuthorization" and .metadata.name == "tempo-from-collector") |
-  (.spec.client.meshTLS.identities | contains([
+  select(.kind == "MeshTLSAuthentication" and .metadata.name == "tempo-from-collector") |
+  (.spec.identities | contains([
     "otel-collector.reefops-observability.serviceaccount.identity.linkerd.cluster.local"
   ]))
 ' "${temp_dir}/config.yaml" >/dev/null

@@ -51,9 +51,9 @@ yq eval -e '
 ' <<<"${rendered}" >/dev/null
 
 yq eval -e '
-  select(.kind == "ServerAuthorization" and
+  select(.kind == "MeshTLSAuthentication" and
     .metadata.name == "reefops-authorizer-from-envoy") |
-  .spec.client.meshTLS.identities[0] ==
+  .spec.identities[0] ==
     "reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local"
 ' <<<"${rendered}" >/dev/null
 

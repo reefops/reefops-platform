@@ -131,14 +131,21 @@ spec:
   port: grpc
   proxyProtocol: gRPC
 ---
-apiVersion: policy.linkerd.io/v1beta1
-kind: ServerAuthorization
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
 metadata:
   name: reefops-authorizer-from-envoy
   namespace: reefops-identity
 spec:
-  server: {name: reefops-authorizer-grpc}
-  client:
-    meshTLS:
-      identities:
-        - reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local
+  identities:
+    - reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: reefops-authorizer-from-envoy
+  namespace: reefops-identity
+spec:
+  targetRef: {group: policy.linkerd.io, kind: Server, name: reefops-authorizer-grpc}
+  requiredAuthenticationRefs:
+    - {group: policy.linkerd.io, kind: MeshTLSAuthentication, name: reefops-authorizer-from-envoy}

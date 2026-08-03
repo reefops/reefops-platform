@@ -274,18 +274,25 @@ spec:
   port: otlp-grpc
   proxyProtocol: gRPC
 ---
-apiVersion: policy.linkerd.io/v1beta1
-kind: ServerAuthorization
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
 metadata:
   name: otel-collector-producers
   namespace: reefops-observability
 spec:
-  server: {name: otel-collector-otlp}
-  client:
-    meshTLS:
-      identities:
-        - reefops-authorizer.reefops-identity.serviceaccount.identity.linkerd.cluster.local
-        - reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local
+  identities:
+    - reefops-authorizer.reefops-identity.serviceaccount.identity.linkerd.cluster.local
+    - reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: otel-collector-producers
+  namespace: reefops-observability
+spec:
+  targetRef: {group: policy.linkerd.io, kind: Server, name: otel-collector-otlp}
+  requiredAuthenticationRefs:
+    - {group: policy.linkerd.io, kind: MeshTLSAuthentication, name: otel-collector-producers}
 ---
 apiVersion: policy.linkerd.io/v1beta3
 kind: Server
@@ -297,14 +304,21 @@ spec:
   port: otlp-grpc
   proxyProtocol: gRPC
 ---
-apiVersion: policy.linkerd.io/v1beta1
-kind: ServerAuthorization
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
 metadata:
   name: tempo-from-collector
   namespace: reefops-observability
 spec:
-  server: {name: tempo-otlp}
-  client:
-    meshTLS:
-      identities:
-        - otel-collector.reefops-observability.serviceaccount.identity.linkerd.cluster.local
+  identities:
+    - otel-collector.reefops-observability.serviceaccount.identity.linkerd.cluster.local
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: tempo-from-collector
+  namespace: reefops-observability
+spec:
+  targetRef: {group: policy.linkerd.io, kind: Server, name: tempo-otlp}
+  requiredAuthenticationRefs:
+    - {group: policy.linkerd.io, kind: MeshTLSAuthentication, name: tempo-from-collector}
