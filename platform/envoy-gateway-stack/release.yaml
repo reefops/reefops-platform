@@ -75,6 +75,7 @@ spec:
               type: Namespaces
               namespaces:
                 - reefops-gateway-system
+                - reefops-observability
         logging:
           level:
             default: info

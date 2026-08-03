@@ -29,6 +29,10 @@ spec:
         reefops.io/environment: development
       annotations:
         linkerd.io/inject: enabled
+        config.linkerd.io/proxy-cpu-request: 10m
+        config.linkerd.io/proxy-cpu-limit: 100m
+        config.linkerd.io/proxy-memory-request: 20Mi
+        config.linkerd.io/proxy-memory-limit: 100Mi
     spec:
       serviceAccountName: reefops-authorizer
       automountServiceAccountToken: false

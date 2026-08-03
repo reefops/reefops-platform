@@ -48,9 +48,7 @@ if ! yq eval -e '
   .spec.values.config.envoyGateway.provider.kubernetes.watch.type ==
     "Namespaces" and
   (.spec.values.config.envoyGateway.provider.kubernetes.watch.namespaces |
-    length) == 1 and
-  .spec.values.config.envoyGateway.provider.kubernetes.watch.namespaces[0] ==
-    "reefops-gateway-system" and
+    contains(["reefops-gateway-system", "reefops-observability"])) and
   (.spec.values.global.images.envoyGateway.image |
     test("@sha256:[a-f0-9]{64}$"))
   ' <<<"${release}" >/dev/null; then

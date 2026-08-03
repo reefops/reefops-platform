@@ -11,6 +11,7 @@ yq eval -e '
   .spec.template.spec.serviceAccountName == "reefops-authorizer" and
   .spec.template.spec.automountServiceAccountToken == false and
   .spec.template.metadata.annotations."linkerd.io/inject" == "enabled" and
+  .spec.template.metadata.annotations."config.linkerd.io/proxy-cpu-request" == "10m" and
   (.spec.template.spec.containers[0].image |
     test("^ghcr.io/reefops/reefops-authorizer@sha256:[a-f0-9]{64}$")) and
   .spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem == true and
