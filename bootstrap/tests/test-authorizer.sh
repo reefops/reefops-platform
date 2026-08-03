@@ -53,8 +53,8 @@ yq eval -e '
 yq eval -e '
   select(.kind == "ServerAuthorization" and
     .metadata.name == "reefops-authorizer-from-envoy") |
-  .spec.client.meshTLS.serviceAccounts[0].name == "reefops-envoy-edge" and
-  .spec.client.meshTLS.serviceAccounts[0].namespace == "reefops-gateway-system"
+  .spec.client.meshTLS.identities[0] ==
+    "reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local"
 ' <<<"${rendered}" >/dev/null
 
 echo "Authorizer aislado, observable y preparado para HPA validado."

@@ -283,9 +283,9 @@ spec:
   server: {name: otel-collector-otlp}
   client:
     meshTLS:
-      serviceAccounts:
-        - {name: reefops-authorizer, namespace: reefops-identity}
-        - {name: reefops-envoy-edge, namespace: reefops-gateway-system}
+      identities:
+        - reefops-authorizer.reefops-identity.serviceaccount.identity.linkerd.cluster.local
+        - reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local
 ---
 apiVersion: policy.linkerd.io/v1beta3
 kind: Server
@@ -306,5 +306,5 @@ spec:
   server: {name: tempo-otlp}
   client:
     meshTLS:
-      serviceAccounts:
-        - {name: otel-collector, namespace: reefops-observability}
+      identities:
+        - otel-collector.reefops-observability.serviceaccount.identity.linkerd.cluster.local

@@ -140,5 +140,5 @@ spec:
   server: {name: reefops-authorizer-grpc}
   client:
     meshTLS:
-      serviceAccounts:
-        - {name: reefops-envoy-edge, namespace: reefops-gateway-system}
+      identities:
+        - reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local
