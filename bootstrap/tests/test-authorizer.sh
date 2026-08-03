@@ -55,4 +55,10 @@ yq eval -e '
   .spec.accessPolicy == "all-unauthenticated"
 ' <<<"${rendered}" >/dev/null
 
+yq eval -e '
+  select(.kind == "ServerAuthorization" and
+    .metadata.name == "reefops-authorizer-network-authorized") |
+  .spec.client.unauthenticated == true
+' <<<"${rendered}" >/dev/null
+
 echo "Authorizer aislado, observable y preparado para HPA validado."
