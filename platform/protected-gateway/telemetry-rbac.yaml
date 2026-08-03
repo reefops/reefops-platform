@@ -1,0 +1,33 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: envoy-gateway-telemetry-reader
+  namespace: reefops-observability
+rules:
+  - apiGroups: [""]
+    resources: [services]
+    resourceNames: [otel-collector]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [services]
+    verbs: [list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - apiGroups: [gateway.networking.k8s.io]
+    resources: [referencegrants]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: envoy-gateway-telemetry-reader
+  namespace: reefops-observability
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: envoy-gateway-telemetry-reader
+subjects:
+  - kind: ServiceAccount
+    name: envoy-gateway
+    namespace: reefops-gateway-system

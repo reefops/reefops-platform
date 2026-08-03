@@ -23,7 +23,12 @@ spec:
             runAsGroup: 65532
             seccompProfile: {type: RuntimeDefault}
         pod:
-          annotations: {linkerd.io/inject: enabled}
+          annotations:
+            linkerd.io/inject: enabled
+            config.linkerd.io/proxy-cpu-request: 10m
+            config.linkerd.io/proxy-cpu-limit: 100m
+            config.linkerd.io/proxy-memory-request: 20Mi
+            config.linkerd.io/proxy-memory-limit: 100Mi
           labels:
             app.kubernetes.io/part-of: reefops
             reefops.io/gateway: edge

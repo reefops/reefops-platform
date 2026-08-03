@@ -10,6 +10,7 @@ yq eval -e '
   (.spec.provider.kubernetes.envoyDeployment.container.image |
     test("@sha256:[a-f0-9]{64}$")) and
   .spec.provider.kubernetes.envoyDeployment.pod.annotations."linkerd.io/inject" == "enabled" and
+  .spec.provider.kubernetes.envoyDeployment.pod.annotations."config.linkerd.io/proxy-cpu-request" == "10m" and
   .spec.provider.kubernetes.envoyDeployment.container.securityContext.runAsUser == 65532 and
   .spec.provider.kubernetes.envoyDeployment.container.securityContext.runAsGroup == 65532 and
   .spec.provider.kubernetes.envoyHpa.minReplicas == 1 and
