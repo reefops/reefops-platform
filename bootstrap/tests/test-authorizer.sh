@@ -51,6 +51,11 @@ yq eval -e '
 ' <<<"${rendered}" >/dev/null
 
 yq eval -e '
+  select(.kind == "Server" and .metadata.name == "reefops-authorizer-grpc") |
+  .spec.accessPolicy == "authenticated"
+' <<<"${rendered}" >/dev/null
+
+yq eval -e '
   select(.kind == "MeshTLSAuthentication" and
     .metadata.name == "reefops-authorizer-from-envoy") |
   .spec.identities[0] ==

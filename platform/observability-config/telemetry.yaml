@@ -273,6 +273,7 @@ spec:
   podSelector: {matchLabels: {app.kubernetes.io/name: otel-collector}}
   port: otlp-grpc
   proxyProtocol: gRPC
+  accessPolicy: authenticated
 ---
 apiVersion: policy.linkerd.io/v1alpha1
 kind: MeshTLSAuthentication
@@ -303,6 +304,7 @@ spec:
   podSelector: {matchLabels: {app.kubernetes.io/name: tempo}}
   port: otlp-grpc
   proxyProtocol: gRPC
+  accessPolicy: authenticated
 ---
 apiVersion: policy.linkerd.io/v1alpha1
 kind: MeshTLSAuthentication
