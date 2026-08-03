@@ -155,7 +155,7 @@ done
 for server in otel-collector-otlp tempo-otlp; do
   yq eval -e "
     select(.kind == \"Server\" and .metadata.name == \"${server}\") |
-    .spec.accessPolicy == \"authenticated\"
+    .spec.accessPolicy == \"all-authenticated\"
   " "${temp_dir}/config.yaml" >/dev/null
 done
 if grep -F 'kubectl -n flux-system wait' "${verifier}" >/dev/null; then

@@ -52,7 +52,7 @@ yq eval -e '
 
 yq eval -e '
   select(.kind == "Server" and .metadata.name == "reefops-authorizer-grpc") |
-  .spec.accessPolicy == "authenticated"
+  .spec.accessPolicy == "all-authenticated"
 ' <<<"${rendered}" >/dev/null
 
 yq eval -e '

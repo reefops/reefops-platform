@@ -130,7 +130,7 @@ spec:
   podSelector: {matchLabels: {app.kubernetes.io/name: reefops-authorizer}}
   port: grpc
   proxyProtocol: gRPC
-  accessPolicy: authenticated
+  accessPolicy: all-authenticated
 ---
 apiVersion: policy.linkerd.io/v1alpha1
 kind: MeshTLSAuthentication
