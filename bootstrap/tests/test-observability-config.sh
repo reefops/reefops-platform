@@ -151,6 +151,13 @@ for contract in \
     exit 1
   fi
 done
+
+for server in otel-collector-otlp tempo-otlp; do
+  yq eval -e "
+    select(.kind == \"Server\" and .metadata.name == \"${server}\") |
+    .spec.accessPolicy == \"authenticated\"
+  " "${temp_dir}/config.yaml" >/dev/null
+done
 if grep -F 'kubectl -n flux-system wait' "${verifier}" >/dev/null; then
   echo "El verificador busca el HelmRelease en el namespace incorrecto." >&2
   exit 1
