@@ -152,6 +152,13 @@ for contract in \
   fi
 done
 
+for authorization in otel-collector-network-authorized tempo-network-authorized; do
+  yq eval -e "
+    select(.kind == \"ServerAuthorization\" and .metadata.name == \"${authorization}\") |
+    .spec.client.unauthenticated == true
+  " "${temp_dir}/config.yaml" >/dev/null
+done
+
 for server in otel-collector-otlp tempo-otlp; do
   yq eval -e "
     select(.kind == \"Server\" and .metadata.name == \"${server}\") |

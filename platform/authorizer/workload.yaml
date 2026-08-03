@@ -131,3 +131,12 @@ spec:
   port: grpc
   proxyProtocol: gRPC
   accessPolicy: all-unauthenticated
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: reefops-authorizer-network-authorized
+  namespace: reefops-identity
+spec:
+  server: {name: reefops-authorizer-grpc}
+  client: {unauthenticated: true}

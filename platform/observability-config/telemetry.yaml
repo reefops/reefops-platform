@@ -275,6 +275,15 @@ spec:
   proxyProtocol: gRPC
   accessPolicy: all-unauthenticated
 ---
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: otel-collector-network-authorized
+  namespace: reefops-observability
+spec:
+  server: {name: otel-collector-otlp}
+  client: {unauthenticated: true}
+---
 apiVersion: policy.linkerd.io/v1beta3
 kind: Server
 metadata:
@@ -285,3 +294,12 @@ spec:
   port: otlp-grpc
   proxyProtocol: gRPC
   accessPolicy: all-unauthenticated
+---
+apiVersion: policy.linkerd.io/v1beta1
+kind: ServerAuthorization
+metadata:
+  name: tempo-network-authorized
+  namespace: reefops-observability
+spec:
+  server: {name: tempo-otlp}
+  client: {unauthenticated: true}
