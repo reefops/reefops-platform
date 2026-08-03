@@ -185,16 +185,16 @@ done
 
 yq eval -e '
   select(.kind == "ServerAuthorization" and .metadata.name == "otel-collector-producers") |
-  (.spec.client.meshTLS.serviceAccounts | contains([
-    {"name":"reefops-authorizer","namespace":"reefops-identity"},
-    {"name":"reefops-envoy-edge","namespace":"reefops-gateway-system"}
+  (.spec.client.meshTLS.identities | contains([
+    "reefops-authorizer.reefops-identity.serviceaccount.identity.linkerd.cluster.local",
+    "reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local"
   ]))
 ' "${temp_dir}/config.yaml" >/dev/null
 
 yq eval -e '
   select(.kind == "ServerAuthorization" and .metadata.name == "tempo-from-collector") |
-  (.spec.client.meshTLS.serviceAccounts | contains([
-    {"name":"otel-collector","namespace":"reefops-observability"}
+  (.spec.client.meshTLS.identities | contains([
+    "otel-collector.reefops-observability.serviceaccount.identity.linkerd.cluster.local"
   ]))
 ' "${temp_dir}/config.yaml" >/dev/null
 
