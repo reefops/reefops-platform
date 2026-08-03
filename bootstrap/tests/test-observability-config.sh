@@ -155,7 +155,7 @@ done
 for server in otel-collector-otlp tempo-otlp; do
   yq eval -e "
     select(.kind == \"Server\" and .metadata.name == \"${server}\") |
-    .spec.accessPolicy == \"all-authenticated\"
+    .spec.accessPolicy == \"all-unauthenticated\"
   " "${temp_dir}/config.yaml" >/dev/null
 done
 if grep -F 'kubectl -n flux-system wait' "${verifier}" >/dev/null; then
@@ -189,21 +189,6 @@ for workload in tempo otel-collector; do
     .spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation == false
   " "${temp_dir}/config.yaml" >/dev/null
 done
-
-yq eval -e '
-  select(.kind == "MeshTLSAuthentication" and .metadata.name == "otel-collector-producers") |
-  (.spec.identities | contains([
-    "reefops-authorizer.reefops-identity.serviceaccount.identity.linkerd.cluster.local",
-    "reefops-envoy-edge.reefops-gateway-system.serviceaccount.identity.linkerd.cluster.local"
-  ]))
-' "${temp_dir}/config.yaml" >/dev/null
-
-yq eval -e '
-  select(.kind == "MeshTLSAuthentication" and .metadata.name == "tempo-from-collector") |
-  (.spec.identities | contains([
-    "otel-collector.reefops-observability.serviceaccount.identity.linkerd.cluster.local"
-  ]))
-' "${temp_dir}/config.yaml" >/dev/null
 
 if ! yq eval -e '
   select(.kind == "ConfigMap" and .metadata.name == "otel-collector-config") |

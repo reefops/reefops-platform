@@ -122,11 +122,12 @@ servicio que emite trazas. El Collector acepta OTLP sólo desde workloads
 allowlisted y autenticados por identidad mTLS de Linkerd, elimina atributos de
 credenciales, identidad y rutas concretas, y
 exporta a Tempo monolítico con almacenamiento local y siete días de retención.
-Linkerd exige un cliente mTLS autenticado en ambos saltos y NetworkPolicy reduce
-los productores a los pods de Authorizer, Envoy y Collector previstos. Las
-políticas de identidad exacta se conservan declaradas, pero la versión edge del
-policy controller no las aplica de forma fiable; no se elimina la barrera de
-red hasta sustituirla por una versión que pase la aceptación de identidad.
+Linkerd cifra ambos saltos cuando emisor y receptor están mallados y
+NetworkPolicy reduce los productores a los pods de Authorizer, Envoy y
+Collector previstos. La versión edge del policy controller deniega de forma
+incorrecta identidades mTLS coincidentes, por lo que todavía no se usa esa
+identidad como barrera de admisión. La política de red es obligatoria hasta
+actualizar Linkerd y superar la aceptación de identidad exacta.
 Grafana consulta Tempo mediante un datasource interno. Ninguna telemetría se
 envía a servicios cloud.
 
